@@ -3,7 +3,7 @@ const { query } = require('../services/DBService');
 const getYearNpmrdsDataForTmc = async ({
   year,
   tmc,
-  state = 'public',
+  state,
   columns
 }) => {
   const yr = +year;
@@ -11,7 +11,7 @@ const getYearNpmrdsDataForTmc = async ({
   const startDate = `01/01/${yr}`;
   const endDate = `01/01/${+yr + 1}`;
 
-  const schema = `"${state}"`;
+  const schema = `"${state || 'public'}"`;
 
   const cols = (Array.isArray(columns) ? columns : [columns]).sort();
 
@@ -52,7 +52,7 @@ const getYearNpmrdsCountsByTimePeriod = async ({
   const startDate = `01/01/${yr}`;
   const endDate = `01/01/${+yr + 1}`;
 
-  const schema = `"${state}"`;
+  const schema = `"${state || 'public'}"`;
 
   const sql = `
     SELECT
