@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 /* eslint global-require: 0 */
 
 if (!process.env.PGDATABASE) {
-  require('./loadEnvFile');
+  require('../../loadEnvFile');
 }
 
 const pool = new Pool({ max: 20 });

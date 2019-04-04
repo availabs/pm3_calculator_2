@@ -1,0 +1,5 @@
+module.exports = {
+  TRAVEL_TIME: 'TRAVEL_TIME',
+  SPEED: 'SPEED',
+  DATA_DENSITY: 'DATA_DENSITY'
+};
