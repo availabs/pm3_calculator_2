@@ -1,16 +1,13 @@
 const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
-const { ALL } = require('../../enums/npmrdsDatasources');
-
 const { LOTTR } = require('../MeasuresNames');
 
-const { ARITHMETIC } = require('../../enums/meanTypes');
-const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
+const { SPEED } = require('../../enums/npmrdsMetrics');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
 
-const TimePeriodIdentifier = require('../timePeriods/TimePeriodIdentifier');
+const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
@@ -29,12 +26,10 @@ const lottrDefaultTimePeriodSpec = _.pick(
 const FIFTIETH_PCTL = 0.5;
 const EIGHTIETH_PCTL = 0.8;
 
+const { configDefaults } = require('./LottrRules');
+
 class LottrCalculator {
   constructor(calcConfigParams) {
-    const {
-      measureRules: { configDefaults }
-    } = LottrCalculator;
-
     Object.keys(configDefaults).forEach(k => {
       this[k] = calcConfigParams[k] || configDefaults[k];
     });
@@ -46,7 +41,7 @@ class LottrCalculator {
         ? lottrDefaultTimePeriodSpec
         : generalTimePeriodSpecs[this.measureTimePeriodSpec];
 
-    this.timePeriodIdentifier = new TimePeriodIdentifier(timePeriodSpec);
+    this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
@@ -64,14 +59,11 @@ class LottrCalculator {
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
-      const { dow, hour, [npmrdsMetricKey]: metric_value } = row;
+      const { [npmrdsMetricKey]: metric_value } = row;
 
-      const timeperiod = this.timePeriodIdentifier.getTimePeriod({
-        dow,
-        hour
-      });
+      const timeperiod = this.timePeriodIdentifier(row);
 
-      if (timeperiod) {
+      if (timeperiod && metric_value !== null) {
         acc[timeperiod] = acc[timeperiod] || [];
         acc[timeperiod].push(metric_value);
       }
@@ -136,17 +128,5 @@ class LottrCalculator {
     };
   }
 }
-
-LottrCalculator.measureRules = {
-  configDefaults: {
-    measure: LOTTR,
-    npmrdsDatasources: [ALL],
-    timeBinSize: 15,
-    meanType: ARITHMETIC,
-    metric: TRAVEL_TIME,
-    measureTimePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
-  },
-  supportedNpmrdsMetrics: [TRAVEL_TIME, SPEED]
-};
 
 module.exports = LottrCalculator;

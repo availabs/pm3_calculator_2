@@ -10,13 +10,11 @@ const binNum2Hour = [...new Array(numBinsInDay)].map((_, binNum) =>
   Math.floor((timeBinSize * binNum) / 60)
 );
 
-// const getDaylightSavingsStartDateForYear = () => {
-// return {
-// year,
-// month: 3,
-// date: 14 - new Date(`${year}/03/07`).getDay()
-// };
-// };
+const getDaylightSavingsStartDateForYear = () => ({
+  year,
+  month: 3,
+  date: 14 - new Date(`${year}/03/07`).getDay()
+});
 
 const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 
@@ -34,35 +32,6 @@ const numDaysPerMonth = [
   30,
   31
 ];
-
-// const numBinsPerTimePeriodForYear = (() => {
-// const numBinsInDay = getNumBinsInDay(timeBinSize);
-// const dlsStart = getDaylightSavingsStartDateForYear(year);
-
-// const counts = {};
-
-// let dow = new Date(`${year}-01-01T12:00:00`).getDay();
-
-// for (let month = 1; month <= 12; ++month) {
-// for (let date = 1; date <= numDaysPerMonth[month - 1]; ++date) {
-// for (let binNum = 0; binNum < numBinsInDay; ++binNum) {
-// const hour = getHourOfBinNum({ timeBinSize, binNum });
-
-// if (month === dlsStart.month && date === dlsStart.date && hour === 2) {
-// continue;
-// }
-
-// const timeperiod = timeperiodIdentifier({ hour, dow });
-
-// counts[timeperiod] = counts[timeperiod] || 0;
-// ++counts[timeperiod];
-// }
-// dow = (dow + 1) % 7;
-// }
-// }
-
-// return counts;
-// })();
 
 const date2Dow = Object.freeze(
   (() => {
@@ -84,8 +53,44 @@ const date2Dow = Object.freeze(
   })()
 );
 
+const getNumBinsPerTimePeriodForYear = timePeriodIdentifier => {
+  const dlsStart = getDaylightSavingsStartDateForYear(year);
+
+  const counts = {};
+
+  for (let month = 1; month <= 12; ++month) {
+    const mm = `0${month}`.slice(-2);
+
+    for (let date = 1; date <= numDaysPerMonth[month - 1]; ++date) {
+      const dd = `0${date}`.slice(-2);
+
+      const dow = date2Dow[`${year}-${mm}-${dd}`];
+
+      for (let binNum = 0; binNum < numBinsInDay; ++binNum) {
+        const hour = binNum2Hour[binNum];
+
+        if (month === dlsStart.month && date === dlsStart.date && hour === 2) {
+          continue;
+        }
+
+        const timeperiod = timePeriodIdentifier({ hour, dow });
+
+        if (!timeperiod) {
+          continue;
+        }
+
+        counts[timeperiod] = counts[timeperiod] || 0;
+        ++counts[timeperiod];
+      }
+    }
+  }
+
+  return counts;
+};
+
 module.exports = {
   numBinsInDay,
   binNum2Hour,
-  date2Dow
+  date2Dow,
+  getNumBinsPerTimePeriodForYear
 };

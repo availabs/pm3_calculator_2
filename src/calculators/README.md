@@ -14,3 +14,10 @@
   Factories should also validate the configurations for their respective
     measure calculator and potentially throw if an invalid combination
     of parameters is requested.
+
+## Measure Rules
+
+  These are put into separate files to avoid module dependency cycles.
+    calculatorSettings depends on measure rules
+    utils may depend on calculatorSettings
+    Calculators may depend on utils

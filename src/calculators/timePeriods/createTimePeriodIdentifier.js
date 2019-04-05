@@ -44,12 +44,10 @@ const buildTimePeriodLookupTable = timePeriodSpec =>
 const timePeriodGetter = timePeriodLookup => ({ dow, hour }) =>
   (timePeriodLookup[dow] && timePeriodLookup[dow][hour]) || null;
 
-class TimePeriodIdentifier {
-  constructor(timePeriodSpec) {
-    const timePeriodLookup = buildTimePeriodLookupTable(timePeriodSpec);
+const createTimePeriodIdentifier = timePeriodSpec => {
+  const timePeriodLookup = buildTimePeriodLookupTable(timePeriodSpec);
 
-    this.getTimePeriod = timePeriodGetter(timePeriodLookup);
-  }
-}
+  return timePeriodGetter(timePeriodLookup);
+};
 
-module.exports = TimePeriodIdentifier;
+module.exports = createTimePeriodIdentifier;

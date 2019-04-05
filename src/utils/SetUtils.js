@@ -4,10 +4,19 @@ const { intersection, union, difference } = require('lodash');
 const cartesianProductHelper = (a, b) =>
   [].concat(...a.map(d => b.map(e => [].concat(d, e))));
 
-const cartesianProduct = (a, b, ...c) =>
-  Array.isArray(b) && b.length
+const cartesianProduct = (...arrs) => {
+  const d = arrs.filter(arr => Array.isArray(arr) && arr.length);
+
+  if (!d.length) {
+    return [];
+  }
+
+  const [a, b, ...c] = d;
+
+  return Array.isArray(b)
     ? cartesianProduct(cartesianProductHelper(a, b), ...c)
     : a;
+};
 
 module.exports = {
   cartesianProduct,

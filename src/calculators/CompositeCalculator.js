@@ -4,18 +4,24 @@ const { union } = require('../utils/SetUtils');
 
 const LottrCalculatorFactory = require('./Lottr/LottrCalculatorFactory');
 const TttrCalculatorFactory = require('./Tttr/TttrCalculatorFactory');
+const PercentBinsReportingCalculatorFactory = require('./PercentBinsReporting/PercentBinsReportingCalculatorFactory');
 
 const measureCalculatorFactories = [
   LottrCalculatorFactory,
-  TttrCalculatorFactory
+  TttrCalculatorFactory,
+  PercentBinsReportingCalculatorFactory
 ];
 
 class CompositeCalculator {
   constructor() {
-    const calcs = measureCalculatorFactories.map(calcFac =>
-      calcFac.buildCalculators()
-    );
-    this.calculators = _.flatten(calcs).filter(calc => calc);
+    const calcs = _.flatten(
+      measureCalculatorFactories.map(calcFac => calcFac.buildCalculators())
+    ).filter(calc => calc);
+
+    if (!calcs.length) {
+      throw new Error('ERROR: No calculators created.');
+    }
+    this.calculators = calcs;
 
     this.npmrdsDatasources = union(
       ...this.calculators.map(calc => calc.npmrdsDatasources)
@@ -23,8 +29,11 @@ class CompositeCalculator {
   }
 
   async calculateForTmc({ data, attrs }) {
-    return Promise.all(
-      this.calculators.map(calc => calc.calculateForTmc({ data, attrs }))
+    return (
+      this.calculators &&
+      Promise.all(
+        this.calculators.map(calc => calc.calculateForTmc({ data, attrs }))
+      )
     );
   }
 }

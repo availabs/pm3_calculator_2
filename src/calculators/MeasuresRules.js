@@ -1,9 +1,11 @@
-const { LOTTR, TTTR } = require('./MeasuresNames');
+const { LOTTR, TTTR, PERCENT_BINS_REPORTING } = require('./MeasuresNames');
 
-const LottrCalculator = require('./Lottr/LottrCalculator');
-const TttrCalculator = require('./Tttr/TttrCalculator');
+const LottrRules = require('./Lottr/LottrRules');
+const TttrRules = require('./Tttr/TttrRules');
+const PercentBinsReportingRules = require('./PercentBinsReporting/PercentBinsReportingRules');
 
 module.exports = {
-  [LOTTR]: LottrCalculator.measureRules,
-  [TTTR]: TttrCalculator.measureRules
+  [LOTTR]: LottrRules,
+  [TTTR]: TttrRules,
+  [PERCENT_BINS_REPORTING]: PercentBinsReportingRules
 };

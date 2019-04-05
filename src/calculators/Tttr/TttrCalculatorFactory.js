@@ -25,9 +25,7 @@ const {
 
 const { TTTR } = require('../MeasuresNames');
 
-const {
-  measureRules: { supportedNpmrdsMetrics }
-} = TttrCalculator;
+const { supportedNpmrdsMetrics } = require('./TttrRules');
 
 class TttrCalculatorFactory {
   static buildCalculators() {

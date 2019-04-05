@@ -22,16 +22,13 @@
 const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
-const { TRUCK } = require('../../enums/npmrdsDatasources');
-
 const { TTTR } = require('../MeasuresNames');
 
-const { ARITHMETIC } = require('../../enums/meanTypes');
-const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
+const { SPEED } = require('../../enums/npmrdsMetrics');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
 
-const TimePeriodIdentifier = require('../timePeriods/TimePeriodIdentifier');
+const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
@@ -47,15 +44,13 @@ const tttrDefaultTimePeriodSpec = _.pick(
   [AMP, MIDD, PMP, WE, OVN]
 );
 
+const { configDefaults } = require('./TttrRules');
+
 const FIFTIETH_PCTL = 0.5;
 const NINETYFIFTH_PCTL = 0.95;
 
 class TttrCalculator {
   constructor(calcConfigParams) {
-    const {
-      measureRules: { configDefaults }
-    } = TttrCalculator;
-
     Object.keys(configDefaults).forEach(k => {
       this[k] = calcConfigParams[k] || configDefaults[k];
     });
@@ -67,7 +62,7 @@ class TttrCalculator {
         ? tttrDefaultTimePeriodSpec
         : generalTimePeriodSpecs[this.measureTimePeriodSpec];
 
-    this.timePeriodIdentifier = new TimePeriodIdentifier(timePeriodSpec);
+    this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
@@ -85,14 +80,11 @@ class TttrCalculator {
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
-      const { dow, hour, [npmrdsMetricKey]: metric_value } = row;
+      const { [npmrdsMetricKey]: metric_value } = row;
 
-      const timeperiod = this.timePeriodIdentifier.getTimePeriod({
-        dow,
-        hour
-      });
+      const timeperiod = this.timePeriodIdentifier(row);
 
-      if (timeperiod) {
+      if (timeperiod && metric_value !== null) {
         acc[timeperiod] = acc[timeperiod] || [];
         acc[timeperiod].push(metric_value);
       }
@@ -163,17 +155,5 @@ class TttrCalculator {
     };
   }
 }
-
-TttrCalculator.measureRules = {
-  configDefaults: {
-    measure: TTTR,
-    npmrdsDatasources: [TRUCK],
-    timeBinSize: 15,
-    meanType: ARITHMETIC,
-    metric: TRAVEL_TIME,
-    measureTimePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
-  },
-  supportedNpmrdsMetrics: [TRAVEL_TIME, SPEED]
-};
 
 module.exports = TttrCalculator;

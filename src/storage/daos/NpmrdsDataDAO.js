@@ -10,41 +10,6 @@ const { HARMONIC } = require('../../enums/meanTypes');
 
 const MINUTES_PER_EPOCH = 5;
 
-const getYearNpmrdsDataForTmc = async ({ tmc, state, columns }) => {
-  const yr = +year;
-
-  const startDate = `01/01/${yr}`;
-  const endDate = `01/01/${+yr + 1}`;
-
-  const schema = `"${state || 'public'}"`;
-
-  const cols = (Array.isArray(columns) ? columns : [columns]).sort();
-
-  const sql = `
-    SELECT
-        to_char(date, 'YYYY-MM-DD') AS date,
-        epoch,
-        ${cols}
-      FROM ${schema}.npmrds
-      WHERE (
-        (tmc = $1)
-        AND
-        (
-          (date >= $2) AND (date < $3)
-        )
-      )
-  `;
-
-  const q = {
-    text: sql,
-    values: [tmc, startDate, endDate]
-  };
-
-  const { rows } = await query(q);
-
-  return rows;
-};
-
 const getBinnedYearNpmrdsDataForTmc = async ({
   tmc,
   state,
@@ -112,6 +77,5 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 };
 
 module.exports = {
-  getYearNpmrdsDataForTmc,
   getBinnedYearNpmrdsDataForTmc
 };

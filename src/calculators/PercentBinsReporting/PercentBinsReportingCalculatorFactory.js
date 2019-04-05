@@ -1,9 +1,9 @@
 /*
-  Creates all variations of LottrCalculator instances 
+  Creates all variations of PercentBinsReportingCalculator instances 
     required to satisfy the requested measure calculations.
 */
 
-const LottrCalculator = require('./LottrCalculator');
+const PercentBinsReportingCalculator = require('./PercentBinsReportingCalculator');
 
 const {
   cartesianProduct,
@@ -23,13 +23,13 @@ const {
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
 
-const { LOTTR } = require('../MeasuresNames');
+const { PERCENT_BINS_REPORTING } = require('../MeasuresNames');
 
-const { supportedNpmrdsMetrics } = require('./LottrRules');
+const { supportedNpmrdsMetrics } = require('./PercentBinsReportingRules');
 
-class LottrCalculatorFactory {
+class PercentBinsReportingCalculatorFactory {
   static buildCalculators() {
-    if (!measures.includes(LOTTR)) {
+    if (!measures.includes(PERCENT_BINS_REPORTING)) {
       return null;
     }
     // The baseConfigParams are necessarily a single value.
@@ -43,33 +43,37 @@ class LottrCalculatorFactory {
       baseConfigParams.meanType = meanType;
     }
 
-    const lottrNpmrdsDatasources = union(
+    const pctBinsReportingNpmrdsDatasources = union(
       npmrdsDatasources,
-      measureNpmrdsDatasources && measureNpmrdsDatasources[LOTTR]
+      measureNpmrdsDatasources &&
+        measureNpmrdsDatasources[PERCENT_BINS_REPORTING]
     )
       .filter(ds => ds)
       .map(ds => ({ npmrdsDatasources: [ds] }));
 
-    const lottrNpmrdsMetrics = intersection(
-      union(npmrdsMetrics, measureNpmrdsMetrics && measureNpmrdsMetrics[LOTTR]),
+    const pctBinsReportingNpmrdsMetrics = intersection(
+      union(
+        npmrdsMetrics,
+        measureNpmrdsMetrics && measureNpmrdsMetrics[PERCENT_BINS_REPORTING]
+      ),
       supportedNpmrdsMetrics
     )
       .filter(ds => ds)
       .map(npmrdsMetric => ({ npmrdsMetric }));
 
     // FIXME: Code smell. timePeriodSpecs goes from id to actual def.
-    const lottrTimePeriodSpecs = union(
+    const pctBinsReportingTimePeriodSpecs = union(
       timePeriodSpecs,
-      measureTimePeriodSpecs && measureTimePeriodSpecs[LOTTR]
+      measureTimePeriodSpecs && measureTimePeriodSpecs[PERCENT_BINS_REPORTING]
     )
       .filter(tps => tps)
       .map(measureTimePeriodSpec => ({ measureTimePeriodSpec }));
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],
-      lottrNpmrdsDatasources,
-      lottrNpmrdsMetrics,
-      lottrTimePeriodSpecs
+      pctBinsReportingNpmrdsDatasources,
+      pctBinsReportingNpmrdsMetrics,
+      pctBinsReportingTimePeriodSpecs
     ).map(params =>
       Array.isArray(params)
         ? Object.assign({}, ...params)
@@ -77,11 +81,11 @@ class LottrCalculatorFactory {
     );
 
     const calculators = configParamsArr.map(
-      configParams => new LottrCalculator(configParams)
+      configParams => new PercentBinsReportingCalculator(configParams)
     );
 
     return calculators;
   }
 }
 
-module.exports = LottrCalculatorFactory;
+module.exports = PercentBinsReportingCalculatorFactory;
