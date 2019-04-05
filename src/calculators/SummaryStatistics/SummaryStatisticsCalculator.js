@@ -41,7 +41,7 @@ class SummaryStatisticsCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.metric,
-        datasource: this.npmrdsDatasources[0]
+        dataSource: this.npmrdsDataSources[0]
       })
     ];
 
@@ -56,11 +56,11 @@ class SummaryStatisticsCalculator {
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
       const { [npmrdsMetricKey]: metric_value } = row;
 
-      const timeperiod = this.timePeriodIdentifier(row);
+      const timePeriod = this.timePeriodIdentifier(row);
 
-      if (timeperiod && metric_value !== null) {
-        acc[timeperiod] = acc[timeperiod] || [];
-        acc[timeperiod].push(metric_value);
+      if (timePeriod && metric_value !== null) {
+        acc[timePeriod] = acc[timePeriod] || [];
+        acc[timePeriod].push(metric_value);
       }
 
       return acc;
@@ -68,10 +68,10 @@ class SummaryStatisticsCalculator {
 
     const summaryStatsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
-    ).reduce((acc, timeperiod) => {
-      const stats = computeSummaryStats(metricValuesByTimePeriod[timeperiod]);
+    ).reduce((acc, timePeriod) => {
+      const stats = computeSummaryStats(metricValuesByTimePeriod[timePeriod]);
 
-      acc[timeperiod] = Object.keys(stats).reduce((acc2, stat) => {
+      acc[timePeriod] = Object.keys(stats).reduce((acc2, stat) => {
         // eslint-disable-next-line no-param-reassign
         acc2[stat] = precisionRound(stats[stat], 4);
         return acc2;

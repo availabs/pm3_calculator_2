@@ -15,10 +15,10 @@ const {
   measures,
   timeBinSize,
   meanType,
-  npmrdsDatasources,
+  npmrdsDataSources,
   npmrdsMetrics,
   timePeriodSpecs,
-  measureNpmrdsDatasources,
+  measureNpmrdsDataSources,
   measureNpmrdsMetrics,
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
@@ -43,13 +43,13 @@ class PercentBinsReportingCalculatorFactory {
       baseConfigParams.meanType = meanType;
     }
 
-    const pctBinsReportingNpmrdsDatasources = union(
-      npmrdsDatasources,
-      measureNpmrdsDatasources &&
-        measureNpmrdsDatasources[PERCENT_BINS_REPORTING]
+    const pctBinsReportingNpmrdsDataSources = union(
+      npmrdsDataSources,
+      measureNpmrdsDataSources &&
+        measureNpmrdsDataSources[PERCENT_BINS_REPORTING]
     )
       .filter(ds => ds)
-      .map(ds => ({ npmrdsDatasources: [ds] }));
+      .map(ds => ({ npmrdsDataSources: [ds] }));
 
     const pctBinsReportingNpmrdsMetrics = intersection(
       union(
@@ -71,7 +71,7 @@ class PercentBinsReportingCalculatorFactory {
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],
-      pctBinsReportingNpmrdsDatasources,
+      pctBinsReportingNpmrdsDataSources,
       pctBinsReportingNpmrdsMetrics,
       pctBinsReportingTimePeriodSpecs
     ).map(params =>

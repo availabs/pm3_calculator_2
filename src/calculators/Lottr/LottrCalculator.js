@@ -46,7 +46,7 @@ class LottrCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.metric,
-        datasource: this.npmrdsDatasources[0]
+        dataSource: this.npmrdsDataSources[0]
       })
     ];
 
@@ -61,11 +61,11 @@ class LottrCalculator {
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
       const { [npmrdsMetricKey]: metric_value } = row;
 
-      const timeperiod = this.timePeriodIdentifier(row);
+      const timePeriod = this.timePeriodIdentifier(row);
 
-      if (timeperiod && metric_value !== null) {
-        acc[timeperiod] = acc[timeperiod] || [];
-        acc[timeperiod].push(metric_value);
+      if (timePeriod && metric_value !== null) {
+        acc[timePeriod] = acc[timePeriod] || [];
+        acc[timePeriod].push(metric_value);
       }
 
       return acc;
@@ -77,9 +77,9 @@ class LottrCalculator {
 
     const fiftiethPctlsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
-    ).reduce((acc, timeperiod) => {
-      acc[timeperiod] = quantileSorted(
-        metricValuesByTimePeriod[timeperiod],
+    ).reduce((acc, timePeriod) => {
+      acc[timePeriod] = quantileSorted(
+        metricValuesByTimePeriod[timePeriod],
         FIFTIETH_PCTL
       );
       return acc;
@@ -87,20 +87,20 @@ class LottrCalculator {
 
     const eightiethPctlsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
-    ).reduce((acc, timeperiod) => {
-      acc[timeperiod] = quantileSorted(
-        metricValuesByTimePeriod[timeperiod],
+    ).reduce((acc, timePeriod) => {
+      acc[timePeriod] = quantileSorted(
+        metricValuesByTimePeriod[timePeriod],
         EIGHTIETH_PCTL
       );
       return acc;
     }, {});
 
     const lottrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
-      (acc, timeperiod) => {
-        const fiftiethPctl = fiftiethPctlsByTimePeriod[timeperiod];
-        const eightiethPctl = eightiethPctlsByTimePeriod[timeperiod];
+      (acc, timePeriod) => {
+        const fiftiethPctl = fiftiethPctlsByTimePeriod[timePeriod];
+        const eightiethPctl = eightiethPctlsByTimePeriod[timePeriod];
 
-        acc[timeperiod] = precisionRound(eightiethPctl / fiftiethPctl, 2);
+        acc[timePeriod] = precisionRound(eightiethPctl / fiftiethPctl, 2);
         return acc;
       },
       {}

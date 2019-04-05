@@ -2,9 +2,9 @@ const { TRAVEL_TIME } = require('../enums/npmrdsMetrics');
 const getMetricKey = require('./utils/getNpmrdsMetricKey');
 
 class SpeedCalculator {
-  constructor({ length, datasource }) {
+  constructor({ length, dataSource }) {
     this.length = length;
-    this.ttKey = getMetricKey({ metric: TRAVEL_TIME, datasource });
+    this.ttKey = getMetricKey({ metric: TRAVEL_TIME, dataSource });
   }
 
   computeSpeed({ [this.ttKey]: tt }) {

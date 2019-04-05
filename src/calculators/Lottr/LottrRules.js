@@ -1,4 +1,4 @@
-const { ALL } = require('../../enums/npmrdsDatasources');
+const { ALL } = require('../../enums/npmrdsDataSources');
 
 const { LOTTR } = require('../MeasuresNames');
 
@@ -12,7 +12,7 @@ const {
 module.exports = {
   configDefaults: {
     measure: LOTTR,
-    npmrdsDatasources: [ALL],
+    npmrdsDataSources: [ALL],
     timeBinSize: 15,
     meanType: ARITHMETIC,
     metric: TRAVEL_TIME,

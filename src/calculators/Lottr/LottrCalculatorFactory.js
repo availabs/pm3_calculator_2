@@ -15,10 +15,10 @@ const {
   measures,
   timeBinSize,
   meanType,
-  npmrdsDatasources,
+  npmrdsDataSources,
   npmrdsMetrics,
   timePeriodSpecs,
-  measureNpmrdsDatasources,
+  measureNpmrdsDataSources,
   measureNpmrdsMetrics,
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
@@ -43,12 +43,12 @@ class LottrCalculatorFactory {
       baseConfigParams.meanType = meanType;
     }
 
-    const lottrNpmrdsDatasources = union(
-      npmrdsDatasources,
-      measureNpmrdsDatasources && measureNpmrdsDatasources[LOTTR]
+    const lottrNpmrdsDataSources = union(
+      npmrdsDataSources,
+      measureNpmrdsDataSources && measureNpmrdsDataSources[LOTTR]
     )
       .filter(ds => ds)
-      .map(ds => ({ npmrdsDatasources: [ds] }));
+      .map(ds => ({ npmrdsDataSources: [ds] }));
 
     const lottrNpmrdsMetrics = intersection(
       union(npmrdsMetrics, measureNpmrdsMetrics && measureNpmrdsMetrics[LOTTR]),
@@ -67,7 +67,7 @@ class LottrCalculatorFactory {
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],
-      lottrNpmrdsDatasources,
+      lottrNpmrdsDataSources,
       lottrNpmrdsMetrics,
       lottrTimePeriodSpecs
     ).map(params =>

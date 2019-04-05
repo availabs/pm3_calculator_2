@@ -73,14 +73,14 @@ const getNumBinsPerTimePeriodForYear = timePeriodIdentifier => {
           continue;
         }
 
-        const timeperiod = timePeriodIdentifier({ hour, dow });
+        const timePeriod = timePeriodIdentifier({ hour, dow });
 
-        if (!timeperiod) {
+        if (!timePeriod) {
           continue;
         }
 
-        counts[timeperiod] = counts[timeperiod] || 0;
-        ++counts[timeperiod];
+        counts[timePeriod] = counts[timePeriod] || 0;
+        ++counts[timePeriod];
       }
     }
   }

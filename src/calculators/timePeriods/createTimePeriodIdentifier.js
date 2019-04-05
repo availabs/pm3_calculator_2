@@ -1,6 +1,6 @@
 const throwCollisionError = (tps1, tps2, dow, hr) => {
   throw new Error(
-    `ERROR: time period spec collision between timeperiods ${tps1} and ${tps2} for dow ${dow} and hour ${hr}`
+    `ERROR: time period spec collision between timePeriods ${tps1} and ${tps2} for dow ${dow} and hour ${hr}`
   );
 };
 

@@ -1,6 +1,6 @@
 const yargs = require('yargs');
 
-// const npmrdsDatasources = require('./enums/npmrdsDatasources');
+// const npmrdsDataSources = require('./enums/npmrdsDataSources');
 const { ARITHMETIC, HARMONIC } = require('./enums/meanTypes');
 
 const { cartesianProduct } = require('./utils/SetUtils');
@@ -71,8 +71,8 @@ const cliArgsSpec = {
     type: 'array',
     choices: Object.keys(npmrdsMetrics)
   },
-  measureNpmrdsDatasources: {
-    alias: 'measureNpmrdsDatasource',
+  measureNpmrdsDataSources: {
+    alias: 'measureNpmrdsDataSource',
     type: 'array'
   },
   measureNpmrdsMetrics: {
@@ -103,7 +103,7 @@ Object.keys(cliArgsSpec)
   .forEach(alias => delete argv[alias]);
 
 const measureSpecificSettings = [
-  'measureNpmrdsDatasources',
+  'measureNpmrdsDataSources',
   'measureNpmrdsMetrics',
   'measureTimePeriodSpecs'
 ];

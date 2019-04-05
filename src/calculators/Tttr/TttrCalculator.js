@@ -67,7 +67,7 @@ class TttrCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.metric,
-        datasource: this.npmrdsDatasources[0]
+        dataSource: this.npmrdsDataSources[0]
       })
     ];
 
@@ -82,11 +82,11 @@ class TttrCalculator {
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
       const { [npmrdsMetricKey]: metric_value } = row;
 
-      const timeperiod = this.timePeriodIdentifier(row);
+      const timePeriod = this.timePeriodIdentifier(row);
 
-      if (timeperiod && metric_value !== null) {
-        acc[timeperiod] = acc[timeperiod] || [];
-        acc[timeperiod].push(metric_value);
+      if (timePeriod && metric_value !== null) {
+        acc[timePeriod] = acc[timePeriod] || [];
+        acc[timePeriod].push(metric_value);
       }
 
       return acc;
@@ -98,9 +98,9 @@ class TttrCalculator {
 
     const fiftiethPctlsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
-    ).reduce((acc, timeperiod) => {
-      acc[timeperiod] = quantileSorted(
-        metricValuesByTimePeriod[timeperiod],
+    ).reduce((acc, timePeriod) => {
+      acc[timePeriod] = quantileSorted(
+        metricValuesByTimePeriod[timePeriod],
         FIFTIETH_PCTL
       );
       return acc;
@@ -108,24 +108,24 @@ class TttrCalculator {
 
     const ninetyfifthPctlsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
-    ).reduce((acc, timeperiod) => {
-      acc[timeperiod] = quantileSorted(
-        metricValuesByTimePeriod[timeperiod],
+    ).reduce((acc, timePeriod) => {
+      acc[timePeriod] = quantileSorted(
+        metricValuesByTimePeriod[timePeriod],
         NINETYFIFTH_PCTL
       );
       return acc;
     }, {});
 
     const tttrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
-      (acc, timeperiod) => {
+      (acc, timePeriod) => {
         const fiftiethPctl = precisionRound(
-          fiftiethPctlsByTimePeriod[timeperiod]
+          fiftiethPctlsByTimePeriod[timePeriod]
         );
         const ninetyfifthPctl = precisionRound(
-          ninetyfifthPctlsByTimePeriod[timeperiod]
+          ninetyfifthPctlsByTimePeriod[timePeriod]
         );
 
-        acc[timeperiod] = precisionRound(ninetyfifthPctl / fiftiethPctl, 2);
+        acc[timePeriod] = precisionRound(ninetyfifthPctl / fiftiethPctl, 2);
         return acc;
       },
       {}

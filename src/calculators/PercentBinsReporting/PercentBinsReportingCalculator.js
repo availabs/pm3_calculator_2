@@ -42,7 +42,7 @@ class PercentBinsReportingCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.metric,
-        datasource: this.npmrdsDatasources[0]
+        dataSource: this.npmrdsDataSources[0]
       })
     ];
 
@@ -56,12 +56,12 @@ class PercentBinsReportingCalculator {
 
     const countsByTimePeriod = data.reduce((acc, row) => {
       const { [npmrdsMetricKey]: metric_value } = row;
-      const timeperiod = this.timePeriodIdentifier(row);
+      const timePeriod = this.timePeriodIdentifier(row);
 
-      // console.error('==>', typeof timeperiod);
-      if (timeperiod && metric_value !== null) {
-        acc[timeperiod] = acc[timeperiod] || 0;
-        ++acc[timeperiod];
+      // console.error('==>', typeof timePeriod);
+      if (timePeriod && metric_value !== null) {
+        acc[timePeriod] = acc[timePeriod] || 0;
+        ++acc[timePeriod];
       }
 
       return acc;

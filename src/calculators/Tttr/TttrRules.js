@@ -19,7 +19,7 @@
 		as required in 23 CFR 490.611(b)(2).
 */
 
-const { TRUCK } = require('../../enums/npmrdsDatasources');
+const { TRUCK } = require('../../enums/npmrdsDataSources');
 
 const { TTTR } = require('../MeasuresNames');
 
@@ -33,7 +33,7 @@ const {
 module.exports = {
   configDefaults: {
     measure: TTTR,
-    npmrdsDatasources: [TRUCK],
+    npmrdsDataSources: [TRUCK],
     timeBinSize: 15,
     meanType: ARITHMETIC,
     metric: TRAVEL_TIME,

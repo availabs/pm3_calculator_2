@@ -1,4 +1,4 @@
-const { ALL } = require('../../enums/npmrdsDatasources');
+const { ALL } = require('../../enums/npmrdsDataSources');
 
 const { SUMMARY_STATISTICS } = require('../MeasuresNames');
 
@@ -12,7 +12,7 @@ const {
 module.exports = {
   configDefaults: {
     measure: SUMMARY_STATISTICS,
-    npmrdsDatasources: [ALL],
+    npmrdsDataSources: [ALL],
     timeBinSize: 15,
     meanType: ARITHMETIC,
     metric: TRAVEL_TIME,

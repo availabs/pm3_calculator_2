@@ -15,10 +15,10 @@ const {
   measures,
   timeBinSize,
   meanType,
-  npmrdsDatasources,
+  npmrdsDataSources,
   npmrdsMetrics,
   timePeriodSpecs,
-  measureNpmrdsDatasources,
+  measureNpmrdsDataSources,
   measureNpmrdsMetrics,
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
@@ -43,12 +43,12 @@ class SummaryStatisticsCalculatorFactory {
       baseConfigParams.meanType = meanType;
     }
 
-    const summaryStatsNpmrdsDatasources = union(
-      npmrdsDatasources,
-      measureNpmrdsDatasources && measureNpmrdsDatasources[SUMMARY_STATISTICS]
+    const summaryStatsNpmrdsDataSources = union(
+      npmrdsDataSources,
+      measureNpmrdsDataSources && measureNpmrdsDataSources[SUMMARY_STATISTICS]
     )
       .filter(ds => ds)
-      .map(ds => ({ npmrdsDatasources: [ds] }));
+      .map(ds => ({ npmrdsDataSources: [ds] }));
 
     const summaryStatsNpmrdsMetrics = intersection(
       union(
@@ -70,7 +70,7 @@ class SummaryStatisticsCalculatorFactory {
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],
-      summaryStatsNpmrdsDatasources,
+      summaryStatsNpmrdsDataSources,
       summaryStatsNpmrdsMetrics,
       summaryStatsTimePeriodSpecs
     ).map(params =>

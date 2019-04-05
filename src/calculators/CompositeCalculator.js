@@ -25,8 +25,8 @@ class CompositeCalculator {
     }
     this.calculators = calcs;
 
-    this.npmrdsDatasources = union(
-      ...this.calculators.map(calc => calc.npmrdsDatasources)
+    this.npmrdsDataSources = union(
+      ...this.calculators.map(calc => calc.npmrdsDataSources)
     );
   }
 

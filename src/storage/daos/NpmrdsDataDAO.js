@@ -13,10 +13,10 @@ const MINUTES_PER_EPOCH = 5;
 const getBinnedYearNpmrdsDataForTmc = async ({
   tmc,
   state,
-  npmrdsDatasources
+  npmrdsDataSources
 }) => {
-  if (!Array.isArray(npmrdsDatasources)) {
-    throw new Error('ERROR: npmrdsDatasources params is required');
+  if (!Array.isArray(npmrdsDataSources)) {
+    throw new Error('ERROR: npmrdsDataSources params is required');
   }
   const yr = +year;
 
@@ -25,11 +25,11 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 
   const schema = `"${state || 'public'}"`;
 
-  const cols = npmrdsDatasources
+  const cols = npmrdsDataSources
     .sort()
-    .map(datasource => {
+    .map(dataSource => {
       const metric_key = getNpmrdsMetricKey({
-        datasource,
+        dataSource,
         metric: TRAVEL_TIME
       });
 
