@@ -13,17 +13,13 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
-const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
-
 const {
   names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC, PM3_TIME_PERIOD_SPEC },
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
-const summaryStatsDefaultTimePeriodSpec = _.pick(
-  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC],
-  [AMP, MIDD, PMP, WE]
-);
+const summaryStatsDefaultTimePeriodSpec =
+  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
 const { configDefaults } = require('./SummaryStatisticsRules');
 
