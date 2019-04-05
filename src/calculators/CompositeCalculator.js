@@ -5,11 +5,13 @@ const { union } = require('../utils/SetUtils');
 const LottrCalculatorFactory = require('./Lottr/LottrCalculatorFactory');
 const TttrCalculatorFactory = require('./Tttr/TttrCalculatorFactory');
 const PercentBinsReportingCalculatorFactory = require('./PercentBinsReporting/PercentBinsReportingCalculatorFactory');
+const SummaryStatisticsCalculatorFactory = require('./SummaryStatistics/SummaryStatisticsCalculatorFactory');
 
 const measureCalculatorFactories = [
   LottrCalculatorFactory,
   TttrCalculatorFactory,
-  PercentBinsReportingCalculatorFactory
+  PercentBinsReportingCalculatorFactory,
+  SummaryStatisticsCalculatorFactory
 ];
 
 class CompositeCalculator {
