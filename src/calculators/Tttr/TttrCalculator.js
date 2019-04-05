@@ -19,10 +19,7 @@
 		as required in 23 CFR 490.611(b)(2).
 */
 
-const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
-
-const { TTTR } = require('../MeasuresNames');
 
 const { SPEED } = require('../../enums/npmrdsMetrics');
 
@@ -32,22 +29,19 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
-const { AMP, MIDD, PMP, WE, OVN } = require('../../enums/pm3TimePeriods');
-
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC, PM3_TIME_PERIOD_SPEC },
+  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
-const tttrDefaultTimePeriodSpec = _.pick(
-  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC],
-  [AMP, MIDD, PMP, WE, OVN]
-);
-
-const { configDefaults } = require('./TttrRules');
-
 const FIFTIETH_PCTL = 0.5;
 const NINETYFIFTH_PCTL = 0.95;
+
+const {
+  measure: TTTR,
+  configDefaults,
+  defaultTimePeriodSpec
+} = require('./TttrRules');
 
 class TttrCalculator {
   constructor(calcConfigParams) {
@@ -58,20 +52,21 @@ class TttrCalculator {
     this.measure = TTTR;
 
     const timePeriodSpec =
-      this.measureTimePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
-        ? tttrDefaultTimePeriodSpec
-        : generalTimePeriodSpecs[this.measureTimePeriodSpec];
+      this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
+        ? defaultTimePeriodSpec
+        : generalTimePeriodSpecs[this.timePeriodSpec];
 
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
-        metric: this.metric,
+        metric: this.npmrdsMetric,
         dataSource: this.npmrdsDataSources[0]
       })
     ];
 
-    this.requiredTmcAttributes = this.metric === SPEED ? ['length'] : null;
+    this.requiredTmcAttributes =
+      this.npmrdsMetric === SPEED ? ['length'] : null;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {

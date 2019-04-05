@@ -1,8 +1,6 @@
-const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
-const { LOTTR } = require('../MeasuresNames');
-
+const { year, meanType, timeBinSize } = require('../../calculatorSettings');
 const { SPEED } = require('../../enums/npmrdsMetrics');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
@@ -11,22 +9,19 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
-const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
-
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC, PM3_TIME_PERIOD_SPEC },
+  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
-
-const lottrDefaultTimePeriodSpec = _.pick(
-  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC],
-  [AMP, MIDD, PMP, WE]
-);
 
 const FIFTIETH_PCTL = 0.5;
 const EIGHTIETH_PCTL = 0.8;
 
-const { configDefaults } = require('./LottrRules');
+const {
+  measure: LOTTR,
+  configDefaults,
+  defaultTimePeriodSpec
+} = require('./LottrRules');
 
 class LottrCalculator {
   constructor(calcConfigParams) {
@@ -34,23 +29,26 @@ class LottrCalculator {
       this[k] = calcConfigParams[k] || configDefaults[k];
     });
 
+    this.year = year;
+    this.meanType = meanType;
+    this.timeBinSize = timeBinSize;
     this.measure = LOTTR;
 
-    const timePeriodSpec =
-      this.measureTimePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
-        ? lottrDefaultTimePeriodSpec
-        : generalTimePeriodSpecs[this.measureTimePeriodSpec];
+    const timePeriodSpecDef =
+      this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
+        ? defaultTimePeriodSpec
+        : generalTimePeriodSpecs[this.timePeriodSpec];
 
-    this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
+    this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpecDef);
 
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
-        metric: this.metric,
+        metric: this.npmrdsMetric,
         dataSource: this.npmrdsDataSources[0]
       })
     ];
 
-    this.requiredTmcAttributes = this.metric === SPEED ? ['length'] : null;
+    this.requiredTmcAttributes = this.npmrdsMetric === SPEED ? ['length'] : null;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {

@@ -1,7 +1,3 @@
-const _ = require('lodash');
-
-const { SUMMARY_STATISTICS } = require('../MeasuresNames');
-
 const { SPEED } = require('../../enums/npmrdsMetrics');
 
 const {
@@ -14,14 +10,15 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC, PM3_TIME_PERIOD_SPEC },
+  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
-const summaryStatsDefaultTimePeriodSpec =
-  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
-
-const { configDefaults } = require('./SummaryStatisticsRules');
+const {
+  measure: SUMMARY_STATISTICS,
+  configDefaults,
+  defaultTimePeriodSpec
+} = require('./SummaryStatisticsRules');
 
 class SummaryStatisticsCalculator {
   constructor(calcConfigParams) {
@@ -32,20 +29,21 @@ class SummaryStatisticsCalculator {
     this.measure = SUMMARY_STATISTICS;
 
     const timePeriodSpec =
-      this.measureTimePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
-        ? summaryStatsDefaultTimePeriodSpec
-        : generalTimePeriodSpecs[this.measureTimePeriodSpec];
+      this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
+        ? defaultTimePeriodSpec
+        : generalTimePeriodSpecs[this.timePeriodSpec];
 
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
-        metric: this.metric,
+        metric: this.npmrdsMetric,
         dataSource: this.npmrdsDataSources[0]
       })
     ];
 
-    this.requiredTmcAttributes = this.metric === SPEED ? ['length'] : null;
+    this.requiredTmcAttributes =
+      this.npmrdsMetric === SPEED ? ['length'] : null;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {

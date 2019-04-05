@@ -13,8 +13,12 @@ const {
 
 const timePeriodSpecNames = Object.keys(timePeriodSpecNameEnum);
 
-const measureNames = Object.keys(require('./calculators/MeasuresNames'));
-const measureRules = require('./calculators/MeasuresRules');
+const {
+  names: measureNamesEnum,
+  configOptions: measureConfigOptions
+} = require('./calculators/MeasureMetadata');
+
+const measureNames = Object.keys(measureNamesEnum);
 
 const measureTimePeriodSpecsOptions = cartesianProduct(
   measureNames,
@@ -24,7 +28,9 @@ const measureTimePeriodSpecsOptions = cartesianProduct(
 const measureNpmrdsMetricOptions = [
   ...new Set(
     measureNames.reduce((acc, measureName) => {
-      const { supportedNpmrdsMetrics } = measureRules[measureName];
+      const { npmrdsMetrics: supportedNpmrdsMetrics } = measureConfigOptions[
+        measureName
+      ];
       if (Array.isArray(supportedNpmrdsMetrics)) {
         for (let i = 0; i < supportedNpmrdsMetrics.length; ++i) {
           const npmrdsMetric = supportedNpmrdsMetrics[i];
@@ -156,6 +162,7 @@ try {
     );
   }
 } catch (err) {
+  // eslint-disable-next-line no-console
   console.error(err.message);
   process.exit(1);
 }

@@ -19,25 +19,35 @@
 		as required in 23 CFR 490.611(b)(2).
 */
 
-const { TRUCK } = require('../../enums/npmrdsDataSources');
+const npmrdsDataSources = require('../../enums/npmrdsDataSources');
 
-const { TTTR } = require('../MeasuresNames');
-
-const { ARITHMETIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
+const TTTR = 'TTTR';
+
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC }
+  names: timePeriodSpecNames,
+  specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
+const {
+  MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  PM3_TIME_PERIOD_SPEC
+} = timePeriodSpecNames;
+
+const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC]
+
 module.exports = {
+  measure: TTTR,
   configDefaults: {
-    measure: TTTR,
-    npmrdsDataSources: [TRUCK],
-    timeBinSize: 15,
-    meanType: ARITHMETIC,
-    metric: TRAVEL_TIME,
-    measureTimePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+    npmrdsDataSources: [npmrdsDataSources.TRUCK],
+    npmrdsMetric: TRAVEL_TIME,
+    timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
   },
-  supportedNpmrdsMetrics: [TRAVEL_TIME, SPEED]
+  configOptions: {
+    npmrdsDataSources,
+    npmrdsMetric: [TRAVEL_TIME, SPEED],
+    timePeriodSpec: timePeriodSpecNames
+  },
+  defaultTimePeriodSpec
 };

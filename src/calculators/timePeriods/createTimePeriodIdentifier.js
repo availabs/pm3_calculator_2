@@ -4,9 +4,9 @@ const throwCollisionError = (tps1, tps2, dow, hr) => {
   );
 };
 
-const buildTimePeriodLookupTable = timePeriodSpec =>
-  Object.keys(timePeriodSpec).reduce((acc, timePeriod) => {
-    const { hours: [startHr, endHr] = [], dow: daysOfWeek } = timePeriodSpec[
+const buildTimePeriodLookupTable = timePeriodSpecDef =>
+  Object.keys(timePeriodSpecDef).reduce((acc, timePeriod) => {
+    const { hours: [startHr, endHr] = [], dow: daysOfWeek } = timePeriodSpecDef[
       timePeriod
     ];
 
@@ -44,8 +44,8 @@ const buildTimePeriodLookupTable = timePeriodSpec =>
 const timePeriodGetter = timePeriodLookup => ({ dow, hour }) =>
   (timePeriodLookup[dow] && timePeriodLookup[dow][hour]) || null;
 
-const createTimePeriodIdentifier = timePeriodSpec => {
-  const timePeriodLookup = buildTimePeriodLookupTable(timePeriodSpec);
+const createTimePeriodIdentifier = timePeriodSpecDef => {
+  const timePeriodLookup = buildTimePeriodLookupTable(timePeriodSpecDef);
 
   return timePeriodGetter(timePeriodLookup);
 };

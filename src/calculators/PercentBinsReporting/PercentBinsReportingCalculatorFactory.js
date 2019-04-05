@@ -23,9 +23,10 @@ const {
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
 
-const { PERCENT_BINS_REPORTING } = require('../MeasuresNames');
-
-const { supportedNpmrdsMetrics } = require('./PercentBinsReportingRules');
+const {
+  measure: PERCENT_BINS_REPORTING,
+  configOptions: { npmrdsMetric: supportedNpmrdsMetrics }
+} = require('./PercentBinsReportingRules');
 
 class PercentBinsReportingCalculatorFactory {
   static buildCalculators() {
@@ -67,7 +68,7 @@ class PercentBinsReportingCalculatorFactory {
       measureTimePeriodSpecs && measureTimePeriodSpecs[PERCENT_BINS_REPORTING]
     )
       .filter(tps => tps)
-      .map(measureTimePeriodSpec => ({ measureTimePeriodSpec }));
+      .map(timePeriodSpec => ({ timePeriodSpec }));
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],

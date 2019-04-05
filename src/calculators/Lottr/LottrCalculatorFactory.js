@@ -23,9 +23,10 @@ const {
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
 
-const { LOTTR } = require('../MeasuresNames');
-
-const { supportedNpmrdsMetrics } = require('./LottrRules');
+const {
+  measure: LOTTR,
+  configOptions: { npmrdsMetric: supportedNpmrdsMetrics }
+} = require('./LottrRules');
 
 class LottrCalculatorFactory {
   static buildCalculators() {
@@ -63,7 +64,7 @@ class LottrCalculatorFactory {
       measureTimePeriodSpecs && measureTimePeriodSpecs[LOTTR]
     )
       .filter(tps => tps)
-      .map(measureTimePeriodSpec => ({ measureTimePeriodSpec }));
+      .map(timePeriodSpec => ({ timePeriodSpec }));
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],

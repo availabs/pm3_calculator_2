@@ -23,9 +23,10 @@ const {
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
 
-const { TTTR } = require('../MeasuresNames');
-
-const { supportedNpmrdsMetrics } = require('./TttrRules');
+const {
+  measure: TTTR,
+  configOptions: { npmrdsMetric: supportedNpmrdsMetrics }
+} = require('./TttrRules');
 
 class TttrCalculatorFactory {
   static buildCalculators() {
@@ -63,7 +64,7 @@ class TttrCalculatorFactory {
       measureTimePeriodSpecs && measureTimePeriodSpecs[TTTR]
     )
       .filter(tps => tps)
-      .map(measureTimePeriodSpec => ({ measureTimePeriodSpec }));
+      .map(timePeriodSpec => ({ timePeriodSpec }));
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],

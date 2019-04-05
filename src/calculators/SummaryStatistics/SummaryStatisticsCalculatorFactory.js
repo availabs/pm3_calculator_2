@@ -23,9 +23,10 @@ const {
   measureTimePeriodSpecs
 } = require('../../calculatorSettings');
 
-const { SUMMARY_STATISTICS } = require('../MeasuresNames');
-
-const { supportedNpmrdsMetrics } = require('./SummaryStatisticsRules');
+const {
+  measure: SUMMARY_STATISTICS,
+  configOptions: { npmrdsMetric: supportedNpmrdsMetrics }
+} = require('./SummaryStatisticsRules');
 
 class SummaryStatisticsCalculatorFactory {
   static buildCalculators() {
@@ -66,7 +67,7 @@ class SummaryStatisticsCalculatorFactory {
       measureTimePeriodSpecs && measureTimePeriodSpecs[SUMMARY_STATISTICS]
     )
       .filter(tps => tps)
-      .map(measureTimePeriodSpec => ({ measureTimePeriodSpec }));
+      .map(timePeriodSpec => ({ timePeriodSpec }));
 
     const configParamsArr = cartesianProduct(
       [baseConfigParams],
