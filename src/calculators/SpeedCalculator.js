@@ -1,5 +1,5 @@
 const { TRAVEL_TIME } = require('../enums/npmrdsMetrics');
-const getMetricKey = require('./utils/getNpmrdsMetricKey');
+const { getMetricKey } = require('../utils/NpmrdsMetricKey');
 
 class SpeedCalculator {
   constructor({ length, dataSource }) {

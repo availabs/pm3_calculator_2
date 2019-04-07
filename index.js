@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-/* eslint no-await-in-loop: 0 */
+/* eslint no-await-in-loop: 0, no-console: 0 */
+
+const calculatorSettings = require('./src/calculatorSettings');
+
+const { year, timeBinSize } = calculatorSettings;
 
 const { end } = require('./src/storage/services/DBService');
 const { getRequestedTmcs } = require('./src/requestedTmcs');
@@ -20,9 +24,10 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
 
 (async () => {
   try {
-    const tmcs = await getRequestedTmcs();
+    const tmcs = await getRequestedTmcs(calculatorSettings);
 
-    const compositeCalculator = new CompositeCalculator();
+    const compositeCalculator = new CompositeCalculator(calculatorSettings);
+
     const {
       calculators,
       npmrdsDataSources,
@@ -35,6 +40,7 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
     attrsSet.add('state');
 
     const tmcsAttrsArr = await getMetadataForTmcs({
+      year,
       tmcs,
       columns: [...attrsSet]
     });
@@ -44,12 +50,14 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
       const { tmc, state } = attrs;
 
       const data = await getBinnedYearNpmrdsDataForTmc({
+        year,
+        timeBinSize,
         state,
         tmc,
         npmrdsDataSources
       });
 
-      NpmrdsDataEnricher.enrichData(data);
+      NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
 
       const res = await compositeCalculator.calculateForTmc({ attrs, data });
 

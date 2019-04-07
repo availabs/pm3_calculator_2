@@ -1,32 +1,29 @@
-const _ = require('lodash');
+const { uniq } = require('../utils/SetUtils');
 
-const { union } = require('../utils/SetUtils');
-
-const LottrCalculatorFactory = require('./Lottr/LottrCalculatorFactory');
-const TttrCalculatorFactory = require('./Tttr/TttrCalculatorFactory');
-const PercentBinsReportingCalculatorFactory = require('./PercentBinsReporting/PercentBinsReportingCalculatorFactory');
-const SummaryStatisticsCalculatorFactory = require('./SummaryStatistics/SummaryStatisticsCalculatorFactory');
-
-const measureCalculatorFactories = [
-  LottrCalculatorFactory,
-  TttrCalculatorFactory,
-  PercentBinsReportingCalculatorFactory,
-  SummaryStatisticsCalculatorFactory
-];
+const CalculatorConfigsBuilder = require('./CalculatorConfigsBuilder');
+const MeasureImpls = require('./MeasureImpls');
 
 class CompositeCalculator {
-  constructor() {
-    const calcs = _.flatten(
-      measureCalculatorFactories.map(calcFac => calcFac.buildCalculators())
-    ).filter(calc => calc);
+  constructor(calculatorSettings) {
+    const calculatorConfigs = CalculatorConfigsBuilder.buildCalculatorConfigs(
+      calculatorSettings
+    );
+
+    const calcs = Object.keys(calculatorConfigs).reduce((acc, measure) => {
+      const configs = calculatorConfigs[measure];
+
+      acc.push(...configs.map(config => new MeasureImpls[measure](config)));
+
+      return acc;
+    }, []);
 
     if (!calcs.length) {
       throw new Error('ERROR: No calculators created.');
     }
     this.calculators = calcs;
 
-    this.npmrdsDataSources = union(
-      ...this.calculators.map(calc => calc.npmrdsDataSources)
+    this.npmrdsDataSources = uniq(
+      this.calculators.map(calc => calc.npmrdsDataSource)
     );
   }
 

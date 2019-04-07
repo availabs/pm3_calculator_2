@@ -22,11 +22,13 @@ const {
 
 class SummaryStatisticsCalculator {
   constructor(calcConfigParams) {
+    this.year = calcConfigParams.year;
+    this.meanType = calcConfigParams.meanType;
+    this.timeBinSize = calcConfigParams.timeBinSize;
+
     Object.keys(configDefaults).forEach(k => {
       this[k] = calcConfigParams[k] || configDefaults[k];
     });
-
-    this.measure = SUMMARY_STATISTICS;
 
     const timePeriodSpec =
       this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
@@ -38,7 +40,7 @@ class SummaryStatisticsCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.npmrdsMetric,
-        dataSource: this.npmrdsDataSources[0]
+        dataSource: this.npmrdsDataSource
       })
     ];
 
@@ -84,5 +86,7 @@ class SummaryStatisticsCalculator {
     };
   }
 }
+
+SummaryStatisticsCalculator.measure = SUMMARY_STATISTICS;
 
 module.exports = SummaryStatisticsCalculator;

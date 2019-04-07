@@ -1,9 +1,9 @@
 const yargs = require('yargs');
+const { camelCase, lowerCase, upperCase } = require('lodash');
+const { uniq } = require('./utils/SetUtils');
 
-// const npmrdsDataSources = require('./enums/npmrdsDataSources');
+const npmrdsDataSources = require('./enums/npmrdsDataSources');
 const { ARITHMETIC, HARMONIC } = require('./enums/meanTypes');
-
-const { cartesianProduct } = require('./utils/SetUtils');
 
 const npmrdsMetrics = require('./enums/npmrdsMetrics');
 
@@ -20,29 +20,11 @@ const {
 
 const measureNames = Object.keys(measureNamesEnum);
 
-const measureTimePeriodSpecsOptions = cartesianProduct(
-  measureNames,
-  timePeriodSpecNames
-).map(pair => pair.join('.'));
+const measureSpecificCliFlagsRE = new RegExp(
+  measureNames.map(m => `^${lowerCase(m)}`).join('|')
+);
 
-const measureNpmrdsMetricOptions = [
-  ...new Set(
-    measureNames.reduce((acc, measureName) => {
-      const { npmrdsMetrics: supportedNpmrdsMetrics } = measureConfigOptions[
-        measureName
-      ];
-      if (Array.isArray(supportedNpmrdsMetrics)) {
-        for (let i = 0; i < supportedNpmrdsMetrics.length; ++i) {
-          const npmrdsMetric = supportedNpmrdsMetrics[i];
-          acc.push(`${measureName}.${npmrdsMetric}`);
-        }
-      }
-      return acc;
-    }, [])
-  )
-].sort();
-
-const cliArgsSpec = {
+const generalCliArgsSpec = {
   year: {
     demand: true,
     type: 'number'
@@ -68,36 +50,52 @@ const cliArgsSpec = {
     default: ARITHMETIC
   },
   timePeriodSpecs: {
-    alias: 'timePeriodSpec',
     type: 'array',
     choices: timePeriodSpecNames
   },
+  npmrdsDataSources: {
+    type: 'array',
+    choices: Object.keys(npmrdsDataSources)
+  },
   npmrdsMetrics: {
-    alias: 'npmrdsMetric',
     type: 'array',
     choices: Object.keys(npmrdsMetrics)
-  },
-  measureNpmrdsDataSources: {
-    alias: 'measureNpmrdsDataSource',
-    type: 'array'
-  },
-  measureNpmrdsMetrics: {
-    alias: 'measureNpmrdsMetric',
-    type: 'string',
-    choices: measureNpmrdsMetricOptions
-  },
-  measureTimeperiodSpecs: {
-    alias: 'measureTimeperiodSpec',
-    type: 'array',
-    choices: measureTimePeriodSpecsOptions
   }
 };
 
+const measureOptionsAsCliFlags = measureNames.reduce((acc, measure) => {
+  const configOptions = measureConfigOptions[measure];
+
+  if (!configOptions) {
+    return acc;
+  }
+
+  Object.keys(configOptions).forEach(opt => {
+    const flag = camelCase(`${measure} ${opt}`).replace(/([^s]$)/, '$1s');
+    acc[flag] = {
+      type: 'array',
+      choices: configOptions[opt],
+      'flatten-duplicate-arrays': false
+    };
+  });
+
+  return acc;
+}, {});
+
+const cliArgsSpec = Object.assign(
+  {},
+  generalCliArgsSpec,
+  measureOptionsAsCliFlags
+);
+
 const { argv } = yargs
+  .strict()
   .parserConfiguration({
-    'camel-case-expansion': false
+    'camel-case-expansion': false,
+    'flatten-duplicate-arrays': false,
+    strict: true
   })
-  .option(cliArgsSpec);
+  .option(cliArgsSpec, { strict: true });
 
 // Remove the aliases from the config object
 //   to simplify the interface and sanitizing.
@@ -108,26 +106,35 @@ Object.keys(cliArgsSpec)
   }, [])
   .forEach(alias => delete argv[alias]);
 
-const measureSpecificSettings = [
-  'measureNpmrdsDataSources',
-  'measureNpmrdsMetrics',
-  'measureTimePeriodSpecs'
-];
+Object.keys(argv)
+  .filter(f => f.match(measureSpecificCliFlagsRE))
+  .forEach(measureSpecificCliFlag => {
+    const measure = upperCase(
+      measureSpecificCliFlag.match(measureSpecificCliFlagsRE)
+    );
 
-// The arrayTypeGlobalSettings and the per measure measureSpecificSettings
-//   should be arrays. Cast them from strings to arrays, as needed.
+    if (!argv.measures.includes(measure)) {
+      throw new Error(
+        `ERROR: measure-specific configuration provided for ${measure}, but ${measure} not specified under the "measures" flag.`
+      );
+    }
 
-measureSpecificSettings.forEach(settingName => {
-  const settingValue = argv[settingName];
+    const measureOption = camelCase(
+      measureSpecificCliFlag.replace(measureSpecificCliFlagsRE, '')
+    );
 
-  if (settingValue) {
-    Object.keys(settingValue).forEach(measure => {
-      if (!Array.isArray(settingValue[measure])) {
-        settingValue[measure] = [settingValue[measure]];
-      }
-    });
-  }
-});
+    argv.measureSpecificSettings = argv.measureSpecificSettings || {};
+    argv.measureSpecificSettings[measure] =
+      argv.measureSpecificSettings[measure] || {};
+
+    argv.measureSpecificSettings[measure][measureOption] = Array.isArray(
+      argv[measureSpecificCliFlag]
+    )
+      ? uniq(argv[measureSpecificCliFlag])
+      : [argv[measureSpecificCliFlag]];
+
+    delete argv[measureSpecificCliFlag];
+  });
 
 try {
   if (!(argv.states || (argv.geolevel && (argv.geocode || argv.geoname)))) {
@@ -167,5 +174,7 @@ try {
   process.exit(1);
 }
 
-console.log(JSON.stringify(argv, null, 4));
+// console.log(JSON.stringify(argv, null, 4));
+// process.exit();
+
 module.exports = argv;

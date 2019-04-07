@@ -45,11 +45,13 @@ const {
 
 class TttrCalculator {
   constructor(calcConfigParams) {
+    this.year = calcConfigParams.year;
+    this.meanType = calcConfigParams.meanType;
+    this.timeBinSize = calcConfigParams.timeBinSize;
+
     Object.keys(configDefaults).forEach(k => {
       this[k] = calcConfigParams[k] || configDefaults[k];
     });
-
-    this.measure = TTTR;
 
     const timePeriodSpec =
       this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
@@ -61,7 +63,7 @@ class TttrCalculator {
     this.npmrdsMetricKeys = [
       getNpmrdsMetricKey({
         metric: this.npmrdsMetric,
-        dataSource: this.npmrdsDataSources[0]
+        dataSource: this.npmrdsDataSource
       })
     ];
 
@@ -150,5 +152,7 @@ class TttrCalculator {
     };
   }
 }
+
+TttrCalculator.measure = TTTR;
 
 module.exports = TttrCalculator;

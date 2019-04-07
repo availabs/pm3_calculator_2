@@ -1,8 +1,6 @@
-const { year } = require('../../calculatorSettings');
-
 const { query } = require('../services/DBService');
 
-const getMetadataForTmcs = async ({ tmcs, columns }) => {
+const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   const tmcsArr = Array.isArray(tmcs) ? tmcs : [tmcs];
 
   const cols = new Set(

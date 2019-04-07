@@ -1,4 +1,4 @@
-const { intersection, union, difference } = require('lodash');
+const { intersection, union, uniq, difference } = require('lodash');
 
 // https://stackoverflow.com/a/43053803
 const cartesianProductHelper = (a, b) =>
@@ -14,13 +14,14 @@ const cartesianProduct = (...arrs) => {
   const [a, b, ...c] = d;
 
   return Array.isArray(b)
-    ? cartesianProduct(cartesianProductHelper(a, b), ...c)
-    : a;
+    ? cartesianProduct(cartesianProductHelper(uniq(a), uniq(b)), ...c)
+    : uniq(a);
 };
 
 module.exports = {
   cartesianProduct,
   intersection,
   difference,
-  union
+  union,
+  uniq
 };

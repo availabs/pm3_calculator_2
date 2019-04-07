@@ -12,7 +12,7 @@ const suffixes = {
   [TRUCK]: 'freight_trucks'
 };
 
-const getNpmrdsMetricKey = ({ metric, dataSource }) =>
+const getNpmrdsMetricKey = ({ metric, dataSource }) => 
   `${prefixes[metric]}_${suffixes[dataSource]}`;
 
 module.exports = { getNpmrdsMetricKey };

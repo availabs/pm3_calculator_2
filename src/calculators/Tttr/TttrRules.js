@@ -19,33 +19,35 @@
 		as required in 23 CFR 490.611(b)(2).
 */
 
-const npmrdsDataSources = require('../../enums/npmrdsDataSources');
+const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
 
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const TTTR = 'TTTR';
 
 const {
-  names: timePeriodSpecNames,
+  names: timePeriodSpecNamesEnum,
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
+
+const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   PM3_TIME_PERIOD_SPEC
-} = timePeriodSpecNames;
+} = timePeriodSpecNamesEnum;
 
-const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC]
+const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
 module.exports = {
   measure: TTTR,
   configDefaults: {
-    npmrdsDataSources: [npmrdsDataSources.TRUCK],
+    npmrdsDataSource: [npmrdsDataSources.TRUCK],
     npmrdsMetric: TRAVEL_TIME,
     timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
   },
   configOptions: {
-    npmrdsDataSources,
+    npmrdsDataSource: npmrdsDataSources,
     npmrdsMetric: [TRAVEL_TIME, SPEED],
     timePeriodSpec: timePeriodSpecNames
   },

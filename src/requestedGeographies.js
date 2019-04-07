@@ -1,8 +1,6 @@
-const { states, geolevel, geocode, geoname } = require('./calculatorSettings');
-
 const Geography = require('./models/Geography');
 
-const getRequestedGeographies = async () => {
+const getRequestedGeographies = async ({ states, geolevel, geocode, geoname }) => {
   const statesArr = [...new Set(states)].filter(s => s);
 
   const geographies = [];

@@ -1,5 +1,3 @@
-const { year, meanType, timeBinSize } = require('../../calculatorSettings');
-
 const { query } = require('../services/DBService');
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
@@ -11,6 +9,9 @@ const { HARMONIC } = require('../../enums/meanTypes');
 const MINUTES_PER_EPOCH = 5;
 
 const getBinnedYearNpmrdsDataForTmc = async ({
+  year,
+  timeBinSize,
+  meanType,
   tmc,
   state,
   npmrdsDataSources
@@ -24,6 +25,7 @@ const getBinnedYearNpmrdsDataForTmc = async ({
   const endDate = `01/01/${+yr + 1}`;
 
   const schema = `"${state || 'public'}"`;
+  console.log('dataSources:', npmrdsDataSources);
 
   const cols = npmrdsDataSources
     .sort()

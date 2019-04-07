@@ -1,30 +1,32 @@
-const npmrdsDataSources = require('../../enums/npmrdsDataSources');
+const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
 
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const SUMMARY_STATISTICS = 'SUMMARY_STATISTICS';
 
 const {
-  names: timePeriodSpecNames,
+  names: timePeriodSpecNamesEnum,
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
+
+const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   PM3_TIME_PERIOD_SPEC
-} = timePeriodSpecNames;
+} = timePeriodSpecNamesEnum;
 
 const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
 module.exports = {
   measure: SUMMARY_STATISTICS,
   configDefaults: {
-    npmrdsDataSources: [npmrdsDataSources.ALL],
+    npmrdsDataSource: [npmrdsDataSources.ALL],
     npmrdsMetric: TRAVEL_TIME,
     timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
   },
   configOptions: {
-    npmrdsDataSources,
+    npmrdsDataSource: npmrdsDataSources,
     npmrdsMetric: [TRAVEL_TIME, SPEED],
     timePeriodSpec: timePeriodSpecNames
   },
