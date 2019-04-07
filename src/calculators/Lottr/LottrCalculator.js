@@ -1,6 +1,8 @@
+const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
-const { SPEED } = require('../../enums/npmrdsMetrics');
+const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
+const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
 
@@ -8,19 +10,28 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
+const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
+
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
+  names: timePeriodSpecNamesEnum,
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
-const FIFTIETH_PCTL = 0.5;
-const EIGHTIETH_PCTL = 0.8;
+const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
-  measure: LOTTR,
-  configDefaults,
-  defaultTimePeriodSpec
-} = require('./LottrRules');
+  MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  PM3_TIME_PERIOD_SPEC
+} = timePeriodSpecNamesEnum;
+
+const defaultTimePeriodSpec = _.pick(
+  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC],
+  [AMP, MIDD, PMP, WE]
+);
+
+const LOTTR = 'LOTTR';
+const FIFTIETH_PCTL = 0.5;
+const EIGHTIETH_PCTL = 0.8;
 
 class LottrCalculator {
   constructor(calcConfigParams) {
@@ -28,8 +39,8 @@ class LottrCalculator {
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
 
-    Object.keys(configDefaults).forEach(k => {
-      this[k] = calcConfigParams[k] || configDefaults[k];
+    Object.keys(LottrCalculator.configDefaults).forEach(k => {
+      this[k] = calcConfigParams[k] || LottrCalculator.configDefaults[k];
     });
 
     const timePeriodSpecDef =
@@ -127,5 +138,16 @@ class LottrCalculator {
 }
 
 LottrCalculator.measure = LOTTR;
+LottrCalculator.configDefaults = {
+  npmrdsDataSource: [npmrdsDataSources.ALL],
+  npmrdsMetric: TRAVEL_TIME,
+  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+};
+LottrCalculator.configOptions = {
+  npmrdsDataSource: npmrdsDataSources,
+  npmrdsMetric: [TRAVEL_TIME, SPEED],
+  timePeriodSpec: timePeriodSpecNames
+};
+LottrCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
 module.exports = LottrCalculator;

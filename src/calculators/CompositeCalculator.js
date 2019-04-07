@@ -1,7 +1,7 @@
 const { uniq } = require('../utils/SetUtils');
 
 const CalculatorConfigsBuilder = require('./CalculatorConfigsBuilder');
-const MeasureImpls = require('./MeasureImpls');
+const { impls: measureImpls } = require('./MeasureMetadata');
 
 class CompositeCalculator {
   constructor(calculatorSettings) {
@@ -12,7 +12,7 @@ class CompositeCalculator {
     const calcs = Object.keys(calculatorConfigs).reduce((acc, measure) => {
       const configs = calculatorConfigs[measure];
 
-      acc.push(...configs.map(config => new MeasureImpls[measure](config)));
+      acc.push(...configs.map(config => new measureImpls[measure](config)));
 
       return acc;
     }, []);

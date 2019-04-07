@@ -1,20 +1,26 @@
 /* eslint import/no-dynamic-require: 0, global-require: 0 */
 
-const { fileSync } = require('find');
+const impls = [
+  require('./Lottr/LottrCalculator'),
+  require('./PercentBinsReporting/PercentBinsReportingCalculator'),
+  require('./SummaryStatistics/SummaryStatisticsCalculator'),
+  require('./Tttr/TttrCalculator')
+];
 
-const rulesFilesPaths = fileSync(/Rules.js/, __dirname);
-
-module.exports = rulesFilesPaths.reduce(
-  (acc, path) => {
-    const { measure, configDefaults, configOptions } = require(path);
+const metadata = impls.reduce(
+  (acc, impl) => {
+    const { measure, configDefaults, configOptions } = impl;
 
     if (measure) {
       acc.names[measure] = measure;
+      acc.impls[measure] = impl;
       acc.configDefaults[measure] = configDefaults || null;
       acc.configOptions[measure] = configOptions || null;
     }
 
     return acc;
   },
-  { names: {}, configDefaults: {}, configOptions: {} }
+  { names: {}, impls: {}, configDefaults: {}, configOptions: {} }
 );
+
+module.exports = metadata;

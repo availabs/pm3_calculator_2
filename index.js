@@ -18,10 +18,6 @@ const NpmrdsDataEnricher = require('./src/utils/NpmrdsDataEnricher');
 
 const CompositeCalculator = require('./src/calculators/CompositeCalculator');
 
-// console.log(JSON.stringify(require('../src/calculatorSettings'), null, 4));
-
-// process.exit();
-
 (async () => {
   try {
     const tmcs = await getRequestedTmcs(calculatorSettings);

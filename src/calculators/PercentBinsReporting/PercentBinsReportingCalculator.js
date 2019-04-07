@@ -1,8 +1,6 @@
-const {
-  measure: PERCENT_BINS_REPORTING
-} = require('./PercentBinsReportingRules');
+const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
 
-const { SPEED } = require('../../enums/npmrdsMetrics');
+const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const { precisionRound } = require('../../utils/MathUtils');
 
@@ -13,14 +11,20 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
+  names: timePeriodSpecNamesEnum,
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
+const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
+
 const {
-  configDefaults,
-  defaultTimePeriodSpec
-} = require('./PercentBinsReportingRules');
+  MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  PM3_TIME_PERIOD_SPEC
+} = timePeriodSpecNamesEnum;
+
+const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
+
+const PERCENT_BINS_REPORTING = 'PERCENT_BINS_REPORTING';
 
 class PercentBinsReportingCalculator {
   constructor(calcConfigParams) {
@@ -28,8 +32,9 @@ class PercentBinsReportingCalculator {
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
 
-    Object.keys(configDefaults).forEach(k => {
-      this[k] = calcConfigParams[k] || configDefaults[k];
+    Object.keys(PercentBinsReportingCalculator.configDefaults).forEach(k => {
+      this[k] =
+        calcConfigParams[k] || PercentBinsReportingCalculator.configDefaults[k];
     });
 
     const timePeriodSpec =
@@ -86,5 +91,16 @@ class PercentBinsReportingCalculator {
 }
 
 PercentBinsReportingCalculator.measure = PERCENT_BINS_REPORTING;
+PercentBinsReportingCalculator.configDefaults = {
+  npmrdsDataSource: [npmrdsDataSources.ALL],
+  npmrdsMetric: TRAVEL_TIME,
+  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+};
+PercentBinsReportingCalculator.configOptions = {
+  npmrdsDataSource: npmrdsDataSources,
+  npmrdsMetric: [TRAVEL_TIME, SPEED],
+  timePeriodSpec: timePeriodSpecNames
+};
+PercentBinsReportingCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
 module.exports = PercentBinsReportingCalculator;

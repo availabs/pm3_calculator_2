@@ -21,7 +21,9 @@
 
 const { quantileSorted } = require('simple-statistics');
 
-const { SPEED } = require('../../enums/npmrdsMetrics');
+const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
+
+const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
 
@@ -30,18 +32,22 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
 
 const {
-  names: { MEASURE_DEFAULT_TIME_PERIOD_SPEC },
+  names: timePeriodSpecNamesEnum,
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
-const FIFTIETH_PCTL = 0.5;
-const NINETYFIFTH_PCTL = 0.95;
+const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
-  measure: TTTR,
-  configDefaults,
-  defaultTimePeriodSpec
-} = require('./TttrRules');
+  MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  PM3_TIME_PERIOD_SPEC
+} = timePeriodSpecNamesEnum;
+
+const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
+
+const TTTR = 'TTTR';
+const FIFTIETH_PCTL = 0.5;
+const NINETYFIFTH_PCTL = 0.95;
 
 class TttrCalculator {
   constructor(calcConfigParams) {
@@ -49,8 +55,8 @@ class TttrCalculator {
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
 
-    Object.keys(configDefaults).forEach(k => {
-      this[k] = calcConfigParams[k] || configDefaults[k];
+    Object.keys(TttrCalculator.configDefaults).forEach(k => {
+      this[k] = calcConfigParams[k] || TttrCalculator.configDefaults[k];
     });
 
     const timePeriodSpec =
@@ -154,5 +160,16 @@ class TttrCalculator {
 }
 
 TttrCalculator.measure = TTTR;
+TttrCalculator.configDefaults = {
+  npmrdsDataSource: [npmrdsDataSources.TRUCK],
+  npmrdsMetric: TRAVEL_TIME,
+  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+};
+TttrCalculator.configOptions = {
+  npmrdsDataSource: npmrdsDataSources,
+  npmrdsMetric: [TRAVEL_TIME, SPEED],
+  timePeriodSpec: timePeriodSpecNames
+};
+TttrCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
 module.exports = TttrCalculator;
