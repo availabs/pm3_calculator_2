@@ -1,6 +1,6 @@
-const { Pool } = require('pg');
-
 /* eslint global-require: 0 */
+
+const { Pool } = require('pg');
 
 if (!process.env.PGDATABASE) {
   require('../../loadEnvFile');

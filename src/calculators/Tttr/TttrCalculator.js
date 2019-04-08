@@ -68,9 +68,6 @@ class TttrCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
-
-    this.requiredTmcAttributes =
-      this.npmrdsMetric === SPEED ? ['length'] : null;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {

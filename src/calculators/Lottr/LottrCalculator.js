@@ -52,9 +52,6 @@ class LottrCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpecDef);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
-
-    this.requiredTmcAttributes =
-      this.npmrdsMetric === SPEED ? ['length'] : null;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {

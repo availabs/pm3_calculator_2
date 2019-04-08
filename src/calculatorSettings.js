@@ -93,9 +93,8 @@ const { argv } = yargs
   .parserConfiguration({
     'camel-case-expansion': false,
     'flatten-duplicate-arrays': false,
-    strict: true
   })
-  .option(cliArgsSpec, { strict: true });
+  .option(cliArgsSpec);
 
 // Remove the aliases from the config object
 //   to simplify the interface and sanitizing.

@@ -40,14 +40,14 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
       npmrdsMetric: TRAVEL_TIME
     });
 
-    const v =
+    const metricValueExpression =
       npmrdsMetric === TRAVEL_TIME
         ? npmrdsTableCol
         : `(attr.miles / ${npmrdsTableCol} * 3600)`;
 
     if (meanType === ARITHMETIC) {
       acc[npmrdsDataKey] = `
-        AVG(${v}) AS ${npmrdsDataKey}`;
+        AVG(${metricValueExpression}) AS ${npmrdsDataKey}`;
     } else if (meanType === HARMONIC) {
       acc[npmrdsDataKey] = `
         (
@@ -56,7 +56,7 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
           SUM(
             1::DOUBLE PRECISION
             /
-            ${v}::DOUBLE PRECISION
+            ${metricValueExpression}::DOUBLE PRECISION
           )
         ) AS ${npmrdsDataKey}`;
     }
@@ -89,15 +89,22 @@ const getBinnedYearNpmrdsDataForTmc = async ({
     .sort()
     .map(npmrdsDataKey => npmrdsDataKey2SqlTable[npmrdsDataKey]);
 
+  const unrecognizedNpmrdsDataKeys = cols.reduce((acc, col, i) => {
+    if (!col) {
+      acc.push(npmrdsDataKeys[i]);
+    }
+    return acc;
+  }, []);
+
+  if (unrecognizedNpmrdsDataKeys.length) {
+    throw new Error(
+      `ERROR: unrecognized npmrdsDataKeys ${unrecognizedNpmrdsDataKeys}`
+    );
+  }
+
   const requiresTmcLength = npmrdsDataKeys.some(
     npmrdsDataKey => parseNpmrdsDataKey(npmrdsDataKey).npmrdsMetric === SPEED
   );
-
-  cols.forEach((c, i) => {
-    if (!c) {
-      throw new Error(`ERROR: unrecognized npmrdsDataKey ${npmrdsDataKeys[i]}`);
-    }
-  });
 
   const epochsPerBin = Math.floor(timeBinSize / MINUTES_PER_EPOCH);
 
