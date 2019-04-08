@@ -6,7 +6,10 @@ const calculatorSettings = require('./src/calculatorSettings');
 
 const { year, timeBinSize } = calculatorSettings;
 
-const { end } = require('./src/storage/services/DBService');
+const {
+  getDatabaseQueryRelationDependencies,
+  end
+} = require('./src/storage/services/DBService');
 const { getRequestedTmcs } = require('./src/requestedTmcs');
 
 const { getMetadataForTmcs } = require('./src/storage/daos/TmcDao');
@@ -59,6 +62,9 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
 
       console.log(JSON.stringify(res));
     }
+
+    const databaseQueryRelationDependencies = await getDatabaseQueryRelationDependencies();
+    console.log(JSON.stringify(databaseQueryRelationDependencies, null, 4));
   } catch (err) {
     console.error(err);
   } finally {
