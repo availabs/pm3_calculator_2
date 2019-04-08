@@ -26,6 +26,8 @@ const {
 
 const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
+const outputFormatters = require('./SummaryStatisticsOutputFormatters');
+
 const SUMMARY_STATISTICS = 'SUMMARY_STATISTICS';
 
 class SummaryStatisticsCalculator {
@@ -33,6 +35,10 @@ class SummaryStatisticsCalculator {
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
+
+    this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
+      this
+    );
 
     Object.keys(SummaryStatisticsCalculator.configDefaults).forEach(k => {
       this[k] =
@@ -55,13 +61,13 @@ class SummaryStatisticsCalculator {
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
-      const { [npmrdsDataKey]: metric_value } = row;
+      const { [npmrdsDataKey]: metricValue } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);
 
-      if (timePeriod && metric_value !== null) {
+      if (timePeriod && metricValue !== null) {
         acc[timePeriod] = acc[timePeriod] || [];
-        acc[timePeriod].push(metric_value);
+        acc[timePeriod].push(metricValue);
       }
 
       return acc;
@@ -81,10 +87,10 @@ class SummaryStatisticsCalculator {
       return acc;
     }, {});
 
-    return {
+    return this.outputFormatter({
       tmc,
       summaryStatsByTimePeriod
-    };
+    });
   }
 }
 

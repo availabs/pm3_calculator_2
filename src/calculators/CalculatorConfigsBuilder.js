@@ -12,20 +12,18 @@ const { configOptions: measureConfigOptions } = MeasureMetadata;
 
 class CalculatorConfigsBuilder {
   static buildCalculatorConfigs({
+    year,
+    outputFormat,
     measures,
     timeBinSize,
     meanType,
     npmrdsDataSource,
     npmrdsMetric,
     timePeriodSpec,
-    measureSpecificSettings
+    measureSpecificSettings = {}
   }) {
     // The baseConfigParams are necessarily a single value.
-    const baseConfigParams = {};
-
-    if (timeBinSize) {
-      baseConfigParams.timeBinSize = timeBinSize;
-    }
+    const baseConfigParams = { year, timeBinSize, outputFormat };
 
     const calculatorConfigs = measures.reduce((acc, measure) => {
       // npmrdsDataSource, npmrdsMetric, and timePeriodSpec

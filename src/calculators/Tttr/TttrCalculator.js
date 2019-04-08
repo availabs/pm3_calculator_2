@@ -46,6 +46,8 @@ const {
 
 const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
+const outputFormatters = require('./TttrOutputFormatters');
+
 const TTTR = 'TTTR';
 const FIFTIETH_PCTL = 0.5;
 const NINETYFIFTH_PCTL = 0.95;
@@ -55,6 +57,10 @@ class TttrCalculator {
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
+
+    this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
+      this
+    );
 
     Object.keys(TttrCalculator.configDefaults).forEach(k => {
       this[k] = calcConfigParams[k] || TttrCalculator.configDefaults[k];
@@ -76,13 +82,15 @@ class TttrCalculator {
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
-      const { [npmrdsDataKey]: metric_value } = row;
+      const { [npmrdsDataKey]: metricValue } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);
 
-      if (timePeriod && metric_value !== null) {
+      if (timePeriod && metricValue !== null) {
         acc[timePeriod] = acc[timePeriod] || [];
-        acc[timePeriod].push(metric_value);
+        acc[timePeriod].push(
+          this.npmrdsMetric === SPEED ? 1 / metricValue : metricValue
+        );
       }
 
       return acc;
@@ -102,7 +110,7 @@ class TttrCalculator {
       return acc;
     }, {});
 
-    const ninetyfifthPctlsByTimePeriod = Object.keys(
+    const ninetyFifthPctlsByTimePeriod = Object.keys(
       metricValuesByTimePeriod
     ).reduce((acc, timePeriod) => {
       acc[timePeriod] = quantileSorted(
@@ -112,26 +120,24 @@ class TttrCalculator {
       return acc;
     }, {});
 
-    const tttrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
+    const lottrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const fiftiethPctl = precisionRound(
-          fiftiethPctlsByTimePeriod[timePeriod]
-        );
-        const ninetyfifthPctl = precisionRound(
-          ninetyfifthPctlsByTimePeriod[timePeriod]
-        );
+        const fiftiethPctl = fiftiethPctlsByTimePeriod[timePeriod];
+        const ninetyFifthPctl = ninetyFifthPctlsByTimePeriod[timePeriod];
 
-        acc[timePeriod] = precisionRound(ninetyfifthPctl / fiftiethPctl, 2);
+        acc[timePeriod] = precisionRound(ninetyFifthPctl / fiftiethPctl, 2);
         return acc;
       },
       {}
     );
 
-    const ninetyfifthPctlsByTimePeriodRounded = Object.keys(
-      ninetyfifthPctlsByTimePeriod
+    const ninetyFifthPctlsByTimePeriodRounded = Object.keys(
+      ninetyFifthPctlsByTimePeriod
     ).reduce((acc, timePeriod) => {
       acc[timePeriod] = precisionRound(
-        ninetyfifthPctlsByTimePeriod[timePeriod]
+        this.npmrdsMetric === SPEED
+          ? 1 / ninetyFifthPctlsByTimePeriod[timePeriod]
+          : ninetyFifthPctlsByTimePeriod[timePeriod]
       );
       return acc;
     }, {});
@@ -139,16 +145,23 @@ class TttrCalculator {
     const fiftiethPctlsByTimePeriodRounded = Object.keys(
       fiftiethPctlsByTimePeriod
     ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = precisionRound(fiftiethPctlsByTimePeriod[timePeriod]);
+      acc[timePeriod] = precisionRound(
+        this.npmrdsMetric === SPEED
+          ? 1 / fiftiethPctlsByTimePeriod[timePeriod]
+          : fiftiethPctlsByTimePeriod[timePeriod]
+      );
       return acc;
     }, {});
 
-    return {
+    return this.outputFormatter({
       tmc,
-      ninetyfifthPctlsByTimePeriod: ninetyfifthPctlsByTimePeriodRounded,
+      npmrdsDataKey: this.npmrdsDataKeys[0],
+      [this.npmrdsMetric === SPEED
+        ? 'fifthPctlsByTimePeriod'
+        : 'ninetyFifthPctlsByTimePeriod']: ninetyFifthPctlsByTimePeriodRounded,
       fiftiethPctlsByTimePeriod: fiftiethPctlsByTimePeriodRounded,
-      tttrByTimePeriod
-    };
+      lottrByTimePeriod
+    });
   }
 }
 

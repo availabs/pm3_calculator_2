@@ -1,9 +1,13 @@
 const yargs = require('yargs');
+
 const { camelCase, lowerCase, upperCase } = require('lodash');
+
 const { uniq } = require('./utils/SetUtils');
 
 const npmrdsDataSources = require('./enums/npmrdsDataSources');
 const { ARITHMETIC, HARMONIC } = require('./enums/meanTypes');
+
+const outputFormatsEnum = require('./enums/outputFormats');
 
 const npmrdsMetrics = require('./enums/npmrdsMetrics');
 
@@ -25,6 +29,12 @@ const measureSpecificCliFlagsRE = new RegExp(
 );
 
 const generalCliArgsSpec = {
+  outputFormat: {
+    demand: false,
+    type: 'string',
+    default: outputFormatsEnum.EAV,
+    choices: Object.keys(outputFormatsEnum)
+  },
   year: {
     demand: true,
     type: 'number'
@@ -92,7 +102,7 @@ const { argv } = yargs
   .strict()
   .parserConfiguration({
     'camel-case-expansion': false,
-    'flatten-duplicate-arrays': false,
+    'flatten-duplicate-arrays': false
   })
   .option(cliArgsSpec);
 

@@ -25,6 +25,8 @@ const {
 
 const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 
+const outputFormatters = require('./PercentBinsReportingOutputFormatters');
+
 const PERCENT_BINS_REPORTING = 'PERCENT_BINS_REPORTING';
 
 class PercentBinsReportingCalculator {
@@ -32,6 +34,10 @@ class PercentBinsReportingCalculator {
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
+
+    this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
+      this
+    );
 
     Object.keys(PercentBinsReportingCalculator.configDefaults).forEach(k => {
       this[k] =
@@ -56,11 +62,11 @@ class PercentBinsReportingCalculator {
     } = this;
 
     const countsByTimePeriod = data.reduce((acc, row) => {
-      const { [npmrdsDataKey]: metric_value } = row;
+      const { [npmrdsDataKey]: metricValue } = row;
       const timePeriod = this.timePeriodIdentifier(row);
 
       // console.error('==>', typeof timePeriod);
-      if (timePeriod && metric_value !== null) {
+      if (timePeriod && metricValue !== null) {
         acc[timePeriod] = acc[timePeriod] || 0;
         ++acc[timePeriod];
       }
@@ -79,7 +85,7 @@ class PercentBinsReportingCalculator {
       return acc;
     }, {});
 
-    return { tmc, percentBinsReportingByTimePeriod };
+    return this.outputFormatter({ tmc, percentBinsReportingByTimePeriod });
   }
 }
 
