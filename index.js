@@ -26,7 +26,7 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
 
     const {
       calculators,
-      npmrdsDataSources,
+      npmrdsDataKeys,
       requiredTmcAttributes
     } = compositeCalculator;
 
@@ -50,7 +50,7 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
         timeBinSize,
         state,
         tmc,
-        npmrdsDataSources
+        npmrdsDataKeys
       });
 
       NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });

@@ -9,7 +9,7 @@ const {
 
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
-const { getNpmrdsMetricKey } = require('../../utils/NpmrdsMetricKey');
+const { getNpmrdsDataKey } = require('../../utils/NpmrdsDataKey');
 
 const {
   names: timePeriodSpecNamesEnum,
@@ -45,12 +45,7 @@ class SummaryStatisticsCalculator {
 
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
-    this.npmrdsMetricKeys = [
-      getNpmrdsMetricKey({
-        metric: this.npmrdsMetric,
-        dataSource: this.npmrdsDataSource
-      })
-    ];
+    this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.requiredTmcAttributes =
       this.npmrdsMetric === SPEED ? ['length'] : null;
@@ -58,11 +53,11 @@ class SummaryStatisticsCalculator {
 
   async calculateForTmc({ data, attrs: { tmc } }) {
     const {
-      npmrdsMetricKeys: [npmrdsMetricKey]
+      npmrdsDataKeys: [npmrdsDataKey]
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
-      const { [npmrdsMetricKey]: metric_value } = row;
+      const { [npmrdsDataKey]: metric_value } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);
 

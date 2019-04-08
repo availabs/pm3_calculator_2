@@ -10,10 +10,6 @@ const MeasureMetadata = require('./MeasureMetadata');
 
 const { configOptions: measureConfigOptions } = MeasureMetadata;
 
-console.log('%'.repeat(30));
-console.log(MeasureMetadata);
-console.log('%'.repeat(30));
-
 class CalculatorConfigsBuilder {
   static buildCalculatorConfigs({
     measures,

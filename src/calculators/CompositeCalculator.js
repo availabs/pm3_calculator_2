@@ -1,3 +1,4 @@
+const { flatten } = require('lodash');
 const { uniq } = require('../utils/SetUtils');
 
 const CalculatorConfigsBuilder = require('./CalculatorConfigsBuilder');
@@ -22,8 +23,8 @@ class CompositeCalculator {
     }
     this.calculators = calcs;
 
-    this.npmrdsDataSources = uniq(
-      this.calculators.map(calc => calc.npmrdsDataSource)
+    this.npmrdsDataKeys = uniq(
+      flatten(this.calculators.map(calc => calc.npmrdsDataKeys))
     );
   }
 
