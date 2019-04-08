@@ -23,6 +23,7 @@ const { quantileSorted } = require('simple-statistics');
 
 const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
 
+const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
@@ -156,11 +157,13 @@ class TttrCalculator {
 
 TttrCalculator.measure = TTTR;
 TttrCalculator.configDefaults = {
+  meanType: ARITHMETIC,
   npmrdsDataSource: [npmrdsDataSources.TRUCK],
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
 };
 TttrCalculator.configOptions = {
+  meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames

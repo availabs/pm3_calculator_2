@@ -45,19 +45,18 @@ const generalCliArgsSpec = {
   },
   timeBinSize: { type: 'number', choices: [5, 15, 60], default: 15 },
   meanType: {
-    type: 'string',
-    choices: [ARITHMETIC, HARMONIC],
-    default: ARITHMETIC
+    type: 'array',
+    choices: [ARITHMETIC, HARMONIC]
   },
-  timePeriodSpecs: {
+  timePeriodSpec: {
     type: 'array',
     choices: timePeriodSpecNames
   },
-  npmrdsDataSources: {
+  npmrdsDataSource: {
     type: 'array',
     choices: Object.keys(npmrdsDataSources)
   },
-  npmrdsMetrics: {
+  npmrdsMetric: {
     type: 'array',
     choices: Object.keys(npmrdsMetrics)
   }
@@ -71,7 +70,8 @@ const measureOptionsAsCliFlags = measureNames.reduce((acc, measure) => {
   }
 
   Object.keys(configOptions).forEach(opt => {
-    const flag = camelCase(`${measure} ${opt}`).replace(/([^s]$)/, '$1s');
+    // const flag = camelCase(`${measure} ${opt}`).replace(/([^s]$)/, '$1s');
+    const flag = camelCase(`${measure} ${opt}`);
     acc[flag] = {
       type: 'array',
       choices: configOptions[opt],
@@ -160,12 +160,6 @@ try {
   if (Array.isArray(argv.timeBinSize)) {
     throw new Error(
       'ERROR: Calculator currently supports only one timeBinSize per run.'
-    );
-  }
-
-  if (Array.isArray(argv.meanType)) {
-    throw new Error(
-      'ERROR: Calculator currently supports only one meanType per run.'
     );
   }
 } catch (err) {

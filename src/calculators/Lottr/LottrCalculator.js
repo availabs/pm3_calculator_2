@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
+const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
 
@@ -134,11 +135,13 @@ class LottrCalculator {
 
 LottrCalculator.measure = LOTTR;
 LottrCalculator.configDefaults = {
+  meanType: ARITHMETIC,
   npmrdsDataSource: [npmrdsDataSources.ALL],
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
 };
 LottrCalculator.configOptions = {
+  meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames

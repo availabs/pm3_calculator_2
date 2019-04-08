@@ -15,9 +15,9 @@ class CalculatorConfigsBuilder {
     measures,
     timeBinSize,
     meanType,
-    npmrdsDataSources,
-    npmrdsMetrics,
-    timePeriodSpecs,
+    npmrdsDataSource,
+    npmrdsMetric,
+    timePeriodSpec,
     measureSpecificSettings
   }) {
     // The baseConfigParams are necessarily a single value.
@@ -27,56 +27,65 @@ class CalculatorConfigsBuilder {
       baseConfigParams.timeBinSize = timeBinSize;
     }
 
-    if (meanType) {
-      baseConfigParams.meanType = meanType;
-    }
-
     const calculatorConfigs = measures.reduce((acc, measure) => {
-      // npmrdsDataSources, npmrdsMetrics, and timePeriodSpecs
+      // npmrdsDataSource, npmrdsMetric, and timePeriodSpec
       //   can be specified at the global and/or measure level.
       // For these options, we need to get the set union
       //   between the global and measure-specific options.
       // Additionally, we need to filter unsupported options
       //   out of the global settings is the given measure
       //   does not support them.
+      // TODO: Abstract this out so that we don't need
+      //   to manually add this code for every
+      //   global &/or measure-level option.
       const {
-        npmrdsDataSources: measureSpecificNpmrdsDataSources,
-        npmrdsMetrics: measureSpecificNpmrdsMetrics,
-        timePeriodSpecs: measureSpecificTimePeriodSpecs
+        meanType: measureSpecificMeanType,
+        npmrdsDataSource: measureSpecificNpmrdsDataSource,
+        npmrdsMetric: measureSpecificNpmrdsMetric,
+        timePeriodSpec: measureSpecificTimePeriodSpec
       } = measureSpecificSettings[measure] || {};
 
       const {
-        npmrdsDataSource: measureSupportedNpmrdsDataSources,
-        npmrdsMetric: measureSupportedNpmrdsMetrics,
-        timePeriodSpec: measureSupportedTimePeriodSpecs
+        meanType: measureSupportedMeanTypes,
+        npmrdsDataSource: measureSupportedNpmrdsDataSource,
+        npmrdsMetric: measureSupportedNpmrdsMetric,
+        timePeriodSpec: measureSupportedTimePeriodSpec
       } = measureConfigOptions[measure] || {};
 
+      const meanTypeArr = intersection(
+        union(meanType, measureSpecificMeanType),
+        measureSupportedMeanTypes
+      )
+        .filter(mt => mt)
+        .map(mt => ({ meanType: mt }));
+
       const npmrdsDataSourceArr = intersection(
-        union(npmrdsDataSources, measureSpecificNpmrdsDataSources),
-        measureSupportedNpmrdsDataSources
+        union(npmrdsDataSource, measureSpecificNpmrdsDataSource),
+        measureSupportedNpmrdsDataSource
       )
         .filter(ds => ds)
-        .map(npmrdsDataSource => ({ npmrdsDataSource }));
+        .map(ds => ({ npmrdsDataSource: ds }));
 
       const npmrdsMetricArr = intersection(
-        union(npmrdsMetrics, measureSpecificNpmrdsMetrics),
-        measureSupportedNpmrdsMetrics
+        union(npmrdsMetric, measureSpecificNpmrdsMetric),
+        measureSupportedNpmrdsMetric
       )
         .filter(m => m)
-        .map(npmrdsMetric => ({ npmrdsMetric }));
+        .map(m => ({ npmrdsMetric: m }));
 
-      const timePeriodSpecsArr = intersection(
-        union(timePeriodSpecs, measureSpecificTimePeriodSpecs),
-        measureSupportedTimePeriodSpecs
+      const timePeriodSpecArr = intersection(
+        union(timePeriodSpec, measureSpecificTimePeriodSpec),
+        measureSupportedTimePeriodSpec
       )
         .filter(tps => tps)
-        .map(timePeriodSpec => ({ timePeriodSpec }));
+        .map(tps => ({ timePeriodSpec: tps }));
 
       const otherMeasureSpecificSettings = measureSpecificSettings[measure]
         ? difference(Object.keys(measureSpecificSettings[measure]), [
-            'npmrdsDataSources',
-            'npmrdsMetrics',
-            'timePeriodSpecs'
+            'meanType',
+            'npmrdsDataSource',
+            'npmrdsMetric',
+            'timePeriodSpec'
           ]).reduce((acc2, settingFlag) => {
             const settings = uniq(
               measureSpecificSettings[measure][settingFlag]
@@ -94,9 +103,10 @@ class CalculatorConfigsBuilder {
 
       const configParamsArr = cartesianProduct(
         [baseConfigParams],
+        meanTypeArr,
         npmrdsDataSourceArr,
         npmrdsMetricArr,
-        timePeriodSpecsArr,
+        timePeriodSpecArr,
         ...otherMeasureSpecificSettings
       ).map(params =>
         Array.isArray(params)

@@ -1,5 +1,6 @@
 const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
 
+const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const {
@@ -92,11 +93,13 @@ class SummaryStatisticsCalculator {
 
 SummaryStatisticsCalculator.measure = SUMMARY_STATISTICS;
 SummaryStatisticsCalculator.configDefaults = {
+  meanType: ARITHMETIC,
   npmrdsDataSource: [npmrdsDataSources.ALL],
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
 };
 SummaryStatisticsCalculator.configOptions = {
+  meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames
