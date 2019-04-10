@@ -1,3 +1,5 @@
+/* eslint no-await-in-loop: 0 */
+
 const { createWriteStream } = require('fs');
 const { join } = require('path');
 
@@ -29,22 +31,15 @@ class CalculatorsOutputFilesWriter {
       );
 
     return Promise.all(
-      calculatorsOutput.map(
-        (output, i) =>
-          new Promise(async resolve => {
-            const writer = this.calculatorInstanceOutputStreams[i];
+      calculatorsOutput.map(async (output, i) => {
+        const stream = this.calculatorInstanceOutputStreams[i];
 
-            const rows = Array.isArray(output) ? output : [output];
+        const rows = Array.isArray(output) ? output : [output];
 
-            for (let j = 0; j < rows.length; ++j) {
-              if (!writer.write(`${JSON.stringify(rows[j])}\n`)) {
-                writer.on('drain', resolve);
-              } else {
-                resolve();
-              }
-            }
-          })
-      )
+        for (let j = 0; j < rows.length; ++j) {
+          stream.write(`${JSON.stringify(rows[j])}\n`);
+        }
+      })
     );
   }
 

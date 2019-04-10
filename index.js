@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-/* eslint no-await-in-loop: 0, no-console: 0 */
+/* eslint no-await-in-loop: 0, no-console: 0, global-require: 0 */
 
+const ProgressBar = require('progress');
 const calculatorSettings = require('./src/calculatorSettings');
 
 const CalculatorsOutputWriter = require('./src/storage/writers/CalculatorsOutputWriter');
@@ -24,9 +25,14 @@ const NpmrdsDataEnricher = require('./src/utils/NpmrdsDataEnricher');
 
 const CompositeCalculator = require('./src/calculators/CompositeCalculator');
 
+if (!process.env.CALCULATOR_CONCURRENCY) {
+  require('./src/loadEnvFile');
+}
+
 (async () => {
   try {
     const tmcs = await getRequestedTmcs(calculatorSettings);
+    const bar = new ProgressBar(':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta', { total: tmcs.length })
 
     const compositeCalculator = new CompositeCalculator(calculatorSettings);
 
@@ -35,12 +41,12 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
     );
 
     const {
-      calculators,
+      // calculators,
       npmrdsDataKeys,
       requiredTmcAttributes
     } = compositeCalculator;
 
-    console.log(JSON.stringify(calculators));
+    // console.log(JSON.stringify(calculators));
 
     const attrsSet = new Set(requiredTmcAttributes);
     attrsSet.add('state');
@@ -74,7 +80,9 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
             });
 
             await outputWriter.write(res);
+
             resolve();
+            bar.tick()
           })
       )
     );

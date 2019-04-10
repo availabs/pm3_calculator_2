@@ -11,7 +11,7 @@ if (!process.env.PGDATABASE) {
 
 const sqlLog = [];
 
-const pool = new Pool({ max: 20 });
+const pool = new Pool({ max: process.env.CALCULATOR_CONCURRENCY || 10 });
 
 const QUERY_BREAK = `;
 `;
