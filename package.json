@@ -20,6 +20,7 @@
     "fast-csv": "^2.4.1",
     "lodash": "^4.17.11",
     "memoize-one": "^5.0.0",
+    "mkdirp": "^0.5.1",
     "pg": "^7.9.0",
     "pg-query-parser": "^0.2.3",
     "simple-statistics": "^7.0.2",

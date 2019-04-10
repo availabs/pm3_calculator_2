@@ -171,6 +171,12 @@ try {
       'ERROR: Calculator currently supports only one timeBinSize per run.'
     );
   }
+
+  if (Array.isArray(argv.outputFormat)) {
+    throw new Error(
+      'ERROR: Calculator currently supports only one outputFormat per run.'
+    );
+  }
 } catch (err) {
   // eslint-disable-next-line no-console
   console.error(err.message);

@@ -4,12 +4,15 @@
 
 const calculatorSettings = require('./src/calculatorSettings');
 
+const CalculatorsOutputWriter = require('./src/storage/writers/CalculatorsOutputWriter');
+
 const { year, timeBinSize } = calculatorSettings;
 
 const {
-  getDatabaseQueryRelationDependencies,
+  // getDatabaseQueryRelationDependencies,
   end
 } = require('./src/storage/services/DBService');
+
 const { getRequestedTmcs } = require('./src/requestedTmcs');
 
 const { getMetadataForTmcs } = require('./src/storage/daos/TmcDao');
@@ -26,6 +29,10 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
     const tmcs = await getRequestedTmcs(calculatorSettings);
 
     const compositeCalculator = new CompositeCalculator(calculatorSettings);
+
+    const outputWriter = new CalculatorsOutputWriter(
+      compositeCalculator.calculators
+    );
 
     const {
       calculators,
@@ -44,27 +51,38 @@ const CompositeCalculator = require('./src/calculators/CompositeCalculator');
       columns: [...attrsSet]
     });
 
-    for (let i = 0; i < tmcs.length; ++i) {
-      const attrs = tmcsAttrsArr[i];
-      const { tmc, state } = attrs;
+    await Promise.all(
+      tmcs.map(
+        (tmc, i) =>
+          new Promise(async resolve => {
+            const attrs = tmcsAttrsArr[i];
+            const { state } = attrs;
 
-      const data = await getBinnedYearNpmrdsDataForTmc({
-        year,
-        timeBinSize,
-        state,
-        tmc,
-        npmrdsDataKeys
-      });
+            const data = await getBinnedYearNpmrdsDataForTmc({
+              year,
+              timeBinSize,
+              state,
+              tmc,
+              npmrdsDataKeys
+            });
 
-      NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
+            NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
 
-      const res = await compositeCalculator.calculateForTmc({ attrs, data });
+            const res = await compositeCalculator.calculateForTmc({
+              attrs,
+              data
+            });
 
-      console.log(JSON.stringify(res));
-    }
+            await outputWriter.write(res);
+            resolve();
+          })
+      )
+    );
 
-    const databaseQueryRelationDependencies = await getDatabaseQueryRelationDependencies();
-    console.log(JSON.stringify(databaseQueryRelationDependencies, null, 4));
+    outputWriter.end();
+
+    // const databaseQueryRelationDependencies = await getDatabaseQueryRelationDependencies();
+    // console.log(JSON.stringify(databaseQueryRelationDependencies, null, 4));
   } catch (err) {
     console.error(err);
   } finally {
