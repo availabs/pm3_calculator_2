@@ -4,6 +4,7 @@ const impls = [
   require('./Lottr/LottrCalculator'),
   require('./PercentBinsReporting/PercentBinsReportingCalculator'),
   require('./SummaryStatistics/SummaryStatisticsCalculator'),
+  require('./TrafficDistributionFactors/TrafficDistributionFactorsCalculator'),
   require('./Tttr/TttrCalculator')
 ];
 

@@ -35,6 +35,11 @@ const measureSpecificCliFlagsRE = new RegExp(
 );
 
 const generalCliArgsSpec = {
+  progressbar: {
+    demand: false,
+    type: 'boolean',
+    default: true,
+  },
   outputFileFormat: {
     demand: false,
     type: 'string',

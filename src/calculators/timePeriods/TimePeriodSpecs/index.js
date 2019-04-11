@@ -1,18 +1,28 @@
 const MEASURE_DEFAULT_TIME_PERIOD_SPEC = 'MEASURE_DEFAULT_TIME_PERIOD_SPEC';
 const PM3_TIME_PERIOD_SPEC = 'PM3_TIME_PERIOD_SPEC';
 const PM3_ALT_PEAKS_TIME_PERIOD_SPEC = 'PM3_ALT_PEAKS_TIME_PERIOD_SPEC';
+const TRAFFIC_DISTRIBUTION_FACTORS_TIME_PERIOD_SPEC =
+  'TRAFFIC_DISTRIBUTION_FACTORS_TIME_PERIOD_SPEC';
+const TRAFFIC_DISTRIBUTION_FACTORS_ALT_PEAKS_TIME_PERIOD_SPEC =
+  'TRAFFIC_DISTRIBUTION_FACTORS_ALT_PEAKS_TIME_PERIOD_SPEC';
 
 const PM3TimePeriodSpec = require('./PM3TimePeriodSpec');
 const PM3AltPeaksTimePeriodSpec = require('./PM3AltPeaksTimePeriodSpec');
+const TrafficDistributionFactorsTimePeriodSpec = require('./TrafficDistributionFactorsTimePeriodSpec');
+const TrafficDistributionFactorsAltPeaksTimePeriodSpec = require('./TrafficDistributionFactorsAltPeaksTimePeriodSpec');
 
 module.exports = {
   names: {
     MEASURE_DEFAULT_TIME_PERIOD_SPEC,
     PM3_TIME_PERIOD_SPEC,
-    PM3_ALT_PEAKS_TIME_PERIOD_SPEC
+    PM3_ALT_PEAKS_TIME_PERIOD_SPEC,
+    TRAFFIC_DISTRIBUTION_FACTORS_TIME_PERIOD_SPEC,
+    TRAFFIC_DISTRIBUTION_FACTORS_ALT_PEAKS_TIME_PERIOD_SPEC
   },
   specs: {
     [PM3_TIME_PERIOD_SPEC]: PM3TimePeriodSpec,
-    [PM3_ALT_PEAKS_TIME_PERIOD_SPEC]: PM3AltPeaksTimePeriodSpec
+    [PM3_ALT_PEAKS_TIME_PERIOD_SPEC]: PM3AltPeaksTimePeriodSpec,
+    [TRAFFIC_DISTRIBUTION_FACTORS_TIME_PERIOD_SPEC]: TrafficDistributionFactorsTimePeriodSpec,
+    [TRAFFIC_DISTRIBUTION_FACTORS_ALT_PEAKS_TIME_PERIOD_SPEC]: TrafficDistributionFactorsAltPeaksTimePeriodSpec
   }
 };
