@@ -3,16 +3,15 @@
 /* eslint no-await-in-loop: 0, no-console: 0, global-require: 0 */
 
 const ProgressBar = require('progress');
+const pLimit = require('p-limit');
+
 const calculatorSettings = require('./src/calculatorSettings');
 
-const CalculatorsOutputWriter = require('./src/storage/writers/CalculatorsOutputWriter');
+const OutputWriter = require('./src/storage/writers/OutputWriter');
 
 const { year, timeBinSize } = calculatorSettings;
 
-const {
-  // getDatabaseQueryRelationDependencies,
-  end
-} = require('./src/storage/services/DBService');
+const { end } = require('./src/storage/services/DBService');
 
 const { getRequestedTmcs } = require('./src/requestedTmcs');
 
@@ -29,24 +28,24 @@ if (!process.env.CALCULATOR_CONCURRENCY) {
   require('./src/loadEnvFile');
 }
 
+const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
+
 (async () => {
   try {
     const tmcs = await getRequestedTmcs(calculatorSettings);
-    const bar = new ProgressBar(':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta', { total: tmcs.length })
+    const bar = new ProgressBar(
+      ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
+      { total: tmcs.length }
+    );
 
     const compositeCalculator = new CompositeCalculator(calculatorSettings);
 
-    const outputWriter = new CalculatorsOutputWriter(
-      compositeCalculator.calculators
-    );
+    const outputWriter = new OutputWriter({
+      calculatorSettings,
+      calculators: compositeCalculator.calculators
+    });
 
-    const {
-      // calculators,
-      npmrdsDataKeys,
-      requiredTmcAttributes
-    } = compositeCalculator;
-
-    // console.log(JSON.stringify(calculators));
+    const { npmrdsDataKeys, requiredTmcAttributes } = compositeCalculator;
 
     const attrsSet = new Set(requiredTmcAttributes);
     attrsSet.add('state');
@@ -58,9 +57,9 @@ if (!process.env.CALCULATOR_CONCURRENCY) {
     });
 
     await Promise.all(
-      tmcs.map(
-        (tmc, i) =>
-          new Promise(async resolve => {
+      tmcs.map((tmc, i) =>
+        limit(async () => {
+          try {
             const attrs = tmcsAttrsArr[i];
             const { state } = attrs;
 
@@ -79,18 +78,18 @@ if (!process.env.CALCULATOR_CONCURRENCY) {
               data
             });
 
-            await outputWriter.write(res);
+            await outputWriter.writeCalculatorsOutput(res);
 
-            resolve();
-            bar.tick()
-          })
+            bar.tick();
+          } catch (err) {
+            throw new Error(err);
+          }
+        })
       )
     );
 
-    outputWriter.end();
-
-    // const databaseQueryRelationDependencies = await getDatabaseQueryRelationDependencies();
-    // console.log(JSON.stringify(databaseQueryRelationDependencies, null, 4));
+    await outputWriter.writeMetadata();
+    await outputWriter.end();
   } catch (err) {
     console.error(err);
   } finally {

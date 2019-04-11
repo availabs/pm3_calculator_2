@@ -14,7 +14,7 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: this.measure,
+    measure: this.constructor.measure,
     time_bin_size: this.timeBinSize,
     metric: this.npmrdsMetric,
     data_source: this.npmrdsDataSource
@@ -25,9 +25,8 @@ function eavFormatter(output) {
   formatted.push(
     ...Object.keys(twentiethPctlsByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [lowerCase(`${timePeriod}_20pct`)]: twentiethPctlsByTimePeriod[
-          timePeriod
-        ]
+        attribute: lowerCase(`${timePeriod}_20pct`),
+        value: twentiethPctlsByTimePeriod[timePeriod]
       })
     )
   );
@@ -35,9 +34,8 @@ function eavFormatter(output) {
   formatted.push(
     ...Object.keys(fiftiethPctlsByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(
-          lowerCase(`${timePeriod}_50pct`)
-        )]: fiftiethPctlsByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}_50pct`)),
+        value: fiftiethPctlsByTimePeriod[timePeriod]
       })
     )
   );
@@ -45,9 +43,8 @@ function eavFormatter(output) {
   formatted.push(
     ...Object.keys(eightiethPctlsByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(
-          lowerCase(`${timePeriod}_80pct`)
-        )]: eightiethPctlsByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}_80pct`)),
+        value: eightiethPctlsByTimePeriod[timePeriod]
       })
     )
   );
@@ -55,7 +52,8 @@ function eavFormatter(output) {
   formatted.push(
     ...Object.keys(lottrByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(lowerCase(`${timePeriod}`))]: lottrByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}`)),
+        value: lottrByTimePeriod[timePeriod]
       })
     )
   );

@@ -126,7 +126,6 @@ const getBinnedYearNpmrdsDataForTmc = async ({
         )
       )
       GROUP BY date, FLOOR(epoch / ${epochsPerBin})::SMALLINT
-      ORDER BY date, timebin_num
   `;
 
   const q = {

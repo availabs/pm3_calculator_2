@@ -14,7 +14,7 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: this.measure,
+    measure: this.constructor.measure,
     time_bin_size: this.timeBinSize,
     metric: this.npmrdsMetric,
     data_source: this.npmrdsDataSource

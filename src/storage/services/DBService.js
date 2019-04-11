@@ -13,7 +13,8 @@ const sqlLog = [];
 
 const pool = new Pool({ max: process.env.CALCULATOR_CONCURRENCY || 10 });
 
-const QUERY_BREAK = `;
+const QUERY_BREAK = `
+;
 `;
 
 const query = (a, b, c) => {

@@ -42,7 +42,10 @@ const mkOutputDir = async (retries = 0) => {
 
   try {
     mkdirSync(outputDirPath, { recursive: true });
-    return outputDirPath;
+    return {
+      outputDirPath,
+      outputTimestamp: timestamp
+    };
   } catch (err) {
     await new Promise(r => setTimeout(r, 1000));
     return mkOutputDir(++retries);

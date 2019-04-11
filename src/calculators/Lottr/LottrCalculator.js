@@ -11,7 +11,10 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsDataKey } = require('../../utils/NpmrdsDataKey');
 
-const npmrdsDataSources = Object.keys(require('../../enums/npmrdsDataSources'));
+const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
+
+const npmrdsDataSources = Object.keys(npmrdsDataSourcesEnum);
+const { ALL } = npmrdsDataSourcesEnum;
 
 const {
   names: timePeriodSpecNamesEnum,
@@ -38,8 +41,6 @@ const EIGHTIETH_PCTL = 0.8;
 
 class LottrCalculator {
   constructor(calcConfigParams) {
-    this.measure = LottrCalculator.measure;
-
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -154,7 +155,7 @@ class LottrCalculator {
 LottrCalculator.measure = LOTTR;
 LottrCalculator.configDefaults = {
   meanType: ARITHMETIC,
-  npmrdsDataSource: [npmrdsDataSources.ALL],
+  npmrdsDataSource: ALL,
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
 };

@@ -1,13 +1,19 @@
 const yargs = require('yargs');
 
-const { camelCase, lowerCase, upperCase } = require('lodash');
+const { camelCase, lowerCase, upperCase, pick } = require('lodash');
 
 const { uniq } = require('./utils/SetUtils');
 
 const npmrdsDataSources = require('./enums/npmrdsDataSources');
 const { ARITHMETIC, HARMONIC } = require('./enums/meanTypes');
 
+const outputFileFormatsEnum = require('./enums/outputFileFormats');
+
+const { NDJSON } = outputFileFormatsEnum;
+
 const outputFormatsEnum = require('./enums/outputFormats');
+
+const { EAV, VERBOSE } = outputFormatsEnum;
 
 const npmrdsMetrics = require('./enums/npmrdsMetrics');
 
@@ -29,10 +35,16 @@ const measureSpecificCliFlagsRE = new RegExp(
 );
 
 const generalCliArgsSpec = {
+  outputFileFormat: {
+    demand: false,
+    type: 'string',
+    default: NDJSON,
+    choices: Object.keys(outputFileFormatsEnum)
+  },
   outputFormat: {
     demand: false,
     type: 'string',
-    default: outputFormatsEnum.EAV,
+    default: EAV,
     choices: Object.keys(outputFormatsEnum)
   },
   year: {
@@ -106,23 +118,17 @@ const { argv } = yargs
   })
   .option(cliArgsSpec);
 
-// Remove the aliases from the config object
-//   to simplify the interface and sanitizing.
-Object.keys(cliArgsSpec)
-  .reduce((acc, k) => {
-    const { alias } = cliArgsSpec[k];
-    return alias ? acc.concat(alias) : acc;
-  }, [])
-  .forEach(alias => delete argv[alias]);
+// remove all aliases and yargs specific fields
+const calculatorSettings = pick(argv, Object.keys(cliArgsSpec));
 
-Object.keys(argv)
+Object.keys(calculatorSettings)
   .filter(f => f.match(measureSpecificCliFlagsRE))
   .forEach(measureSpecificCliFlag => {
     const measure = upperCase(
       measureSpecificCliFlag.match(measureSpecificCliFlagsRE)
     );
 
-    if (!argv.measures.includes(measure)) {
+    if (!calculatorSettings.measures.includes(measure)) {
       throw new Error(
         `ERROR: measure-specific configuration provided for ${measure}, but ${measure} not specified under the "measures" flag.`
       );
@@ -132,21 +138,28 @@ Object.keys(argv)
       measureSpecificCliFlag.replace(measureSpecificCliFlagsRE, '')
     );
 
-    argv.measureSpecificSettings = argv.measureSpecificSettings || {};
-    argv.measureSpecificSettings[measure] =
-      argv.measureSpecificSettings[measure] || {};
+    calculatorSettings.measureSpecificSettings =
+      calculatorSettings.measureSpecificSettings || {};
+    calculatorSettings.measureSpecificSettings[measure] =
+      calculatorSettings.measureSpecificSettings[measure] || {};
 
-    argv.measureSpecificSettings[measure][measureOption] = Array.isArray(
-      argv[measureSpecificCliFlag]
-    )
-      ? uniq(argv[measureSpecificCliFlag])
-      : [argv[measureSpecificCliFlag]];
+    calculatorSettings.measureSpecificSettings[measure][
+      measureOption
+    ] = Array.isArray(calculatorSettings[measureSpecificCliFlag])
+      ? uniq(calculatorSettings[measureSpecificCliFlag])
+      : [calculatorSettings[measureSpecificCliFlag]];
 
-    delete argv[measureSpecificCliFlag];
+    delete calculatorSettings[measureSpecificCliFlag];
   });
 
 try {
-  if (!(argv.states || (argv.geolevel && (argv.geocode || argv.geoname)))) {
+  if (
+    !(
+      calculatorSettings.states ||
+      (calculatorSettings.geolevel &&
+        (calculatorSettings.geocode || calculatorSettings.geoname))
+    )
+  ) {
     throw new Error(
       'ERROR: A geography is required. Use either\n' +
         '  * the states flag to specify a state or set of states\n' +
@@ -154,27 +167,48 @@ try {
     );
   }
 
-  if (!(argv.geocode || argv.geoname) && argv.geolevel) {
+  if (
+    !(calculatorSettings.geocode || calculatorSettings.geoname) &&
+    calculatorSettings.geolevel
+  ) {
     throw new Error(
-      'ERROR: if a argv.geolevel is specified, either a geocode or geoname is required.'
+      'ERROR: if a calculatorSettings.geolevel is specified, either a geocode or geoname is required.'
     );
   }
 
-  if ((argv.geocode || argv.geoname) && !argv.geolevel) {
+  if (
+    (calculatorSettings.geocode || calculatorSettings.geoname) &&
+    !calculatorSettings.geolevel
+  ) {
     throw new Error(
       'ERROR: if a geocode or geoname is specified, the geolevel is required.'
     );
   }
 
-  if (Array.isArray(argv.timeBinSize)) {
+  if (Array.isArray(calculatorSettings.timeBinSize)) {
     throw new Error(
       'ERROR: Calculator currently supports only one timeBinSize per run.'
     );
   }
 
-  if (Array.isArray(argv.outputFormat)) {
+  if (Array.isArray(calculatorSettings.outputFileFormat)) {
+    throw new Error(
+      'ERROR: Calculator currently supports only one outputFileFormat per run.'
+    );
+  }
+
+  if (Array.isArray(calculatorSettings.outputFormat)) {
     throw new Error(
       'ERROR: Calculator currently supports only one outputFormat per run.'
+    );
+  }
+
+  if (
+    calculatorSettings.outputFormat === VERBOSE &&
+    calculatorSettings.outputFileFormat !== NDJSON
+  ) {
+    throw new Error(
+      'ERROR: If outputFormat is "VERBOSE", outputFileFormat must be "NDJSON"'
     );
   }
 } catch (err) {
@@ -183,7 +217,4 @@ try {
   process.exit(1);
 }
 
-// console.log(JSON.stringify(argv, null, 4));
-// process.exit();
-
-module.exports = argv;
+module.exports = calculatorSettings;
