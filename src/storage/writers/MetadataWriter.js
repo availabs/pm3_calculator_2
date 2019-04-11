@@ -19,6 +19,7 @@ class MetadataWriter {
     outputFileFormat,
     calculatorInstanceOuputFileNames
   }) {
+    this.timestamp = outputTimestamp
     this.metadataFilePath = join(
       outputDirPath,
       `metadata.${outputTimestamp}.${lowerCase(outputFileFormat)}`
@@ -37,6 +38,7 @@ class MetadataWriter {
     const referencedDatabaseTables = await getReferencedDatabaseTables();
 
     const metadata = {
+      timestamp: this.timestamp,
       calculatorSettings: this.calculatorSettings,
       calculators: this.calculatorsState,
       gitRepoState: GitRepoState,

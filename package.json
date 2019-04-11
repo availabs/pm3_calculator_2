@@ -21,6 +21,7 @@
     "lodash": "^4.17.11",
     "memoize-one": "^5.0.0",
     "mkdirp": "^0.5.1",
+    "njstrace": "^1.1.0",
     "p-limit": "^2.2.0",
     "pg": "^7.9.0",
     "pg-query-parser": "^0.2.3",

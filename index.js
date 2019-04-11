@@ -32,12 +32,6 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
 
 (async () => {
   try {
-    const tmcs = await getRequestedTmcs(calculatorSettings);
-    const bar = new ProgressBar(
-      ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
-      { total: tmcs.length }
-    );
-
     const compositeCalculator = new CompositeCalculator(calculatorSettings);
 
     const outputWriter = new OutputWriter({
@@ -46,6 +40,12 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
     });
 
     const { npmrdsDataKeys, requiredTmcAttributes } = compositeCalculator;
+
+    const tmcs = await getRequestedTmcs(calculatorSettings);
+    const bar = new ProgressBar(
+      ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
+      { total: tmcs.length }
+    );
 
     const attrsSet = new Set(requiredTmcAttributes);
     attrsSet.add('state');
@@ -90,6 +90,7 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
 
     await outputWriter.writeMetadata();
     await outputWriter.end();
+    console.log(`Calculator output written to ${outputWriter.outputDirPath}`);
   } catch (err) {
     console.error(err);
   } finally {
