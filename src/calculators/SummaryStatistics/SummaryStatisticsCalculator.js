@@ -45,7 +45,9 @@ class SummaryStatisticsCalculator {
 
     Object.keys(SummaryStatisticsCalculator.configDefaults).forEach(k => {
       this[k] =
-        calcConfigParams[k] || SummaryStatisticsCalculator.configDefaults[k];
+        calcConfigParams[k] === undefined
+          ? SummaryStatisticsCalculator.configDefaults[k]
+          : calcConfigParams[k] === undefined;
     });
 
     const timePeriodSpec =

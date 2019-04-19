@@ -38,7 +38,7 @@ const generalCliArgsSpec = {
   progressbar: {
     demand: false,
     type: 'boolean',
-    default: true,
+    default: true
   },
   outputFileFormat: {
     demand: false,

@@ -1,8 +1,11 @@
 const ss = require('simple-statistics');
 
 const precisionRound = (number, precision = 0) => {
+  if (number === null) {
+    return null;
+  }
   if (!Number.isFinite(+number)) {
-    return +number;
+    return NaN;
   }
 
   const factor = 10 ** precision;

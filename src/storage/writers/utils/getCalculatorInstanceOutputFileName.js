@@ -1,5 +1,6 @@
-const { camelCase, lowerCase } = require('lodash');
-const getCalculatorInstanceConfig = require('../../../utils/getCalculatorInstanceConfig');
+const { lowerCase } = require('lodash');
+
+const measureOutputFileCounts = {};
 
 const getCalculatorInstanceOutputFileName = ({
   calculator,
@@ -8,15 +9,12 @@ const getCalculatorInstanceOutputFileName = ({
 }) => {
   const { measure } = calculator.constructor;
 
-  const config = getCalculatorInstanceConfig(calculator);
+  measureOutputFileCounts[measure] = measureOutputFileCounts[measure] || 0;
+  ++measureOutputFileCounts[measure];
 
-  const filename = `${Object.keys(config)
-    .filter(k => k !== 'measure')
-    .sort()
-    .reduce(
-      (acc, k) => `${acc}_${camelCase(k)}-${camelCase(calculator[k])}`,
-      camelCase(lowerCase(measure))
-    )}.${outputTimestamp}.${lowerCase(outputFileFormat)}`;
+  const filename = `${lowerCase(measure)}-${
+    measureOutputFileCounts[measure]
+  }.${outputTimestamp}.${lowerCase(outputFileFormat)}`;
 
   return filename;
 };

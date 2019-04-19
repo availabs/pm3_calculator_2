@@ -1,6 +1,7 @@
 const { lowerCase, snakeCase } = require('lodash');
-const { EAV, VERBOSE } = require('../../enums/outputFormats');
-const verboseFormatter = require('../../utils/verboseOutputFormatter');
+const { EAV } = require('../../enums/outputFormats');
+
+const basicOutputFormatters = require('../../utils/basicOutputFormatters');
 
 function eavFormatter(output) {
   const { tmc, summaryStatsByTimePeriod } = output;
@@ -33,7 +34,4 @@ function eavFormatter(output) {
   return formatted;
 }
 
-module.exports = {
-  [VERBOSE]: verboseFormatter,
-  [EAV]: eavFormatter
-};
+module.exports = { [EAV]: eavFormatter, ...basicOutputFormatters };

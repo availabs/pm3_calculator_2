@@ -12,8 +12,8 @@ const getNumBinsInDayForTimeBinSize = memoizeOne(timeBinSize =>
 const buildTimeBinNum2HourTable = memoizeOne(timeBinSize => {
   const numBinsInDay = getNumBinsInDayForTimeBinSize(timeBinSize);
 
-  return [...new Array(numBinsInDay)].map((_, binNum) =>
-    Math.floor((timeBinSize * binNum) / 60)
+  return [...new Array(numBinsInDay)].map((_, timeBinNum) =>
+    Math.floor((timeBinSize * timeBinNum) / 60)
   );
 });
 
@@ -83,8 +83,8 @@ const getNumBinsPerTimePeriodForYear = memoizeOne(
 
         const dow = date2Dow[`${year}-${mm}-${dd}`];
 
-        for (let binNum = 0; binNum < numBinsInDay; ++binNum) {
-          const hour = binNum2Hour[binNum];
+        for (let timeBinNum = 0; timeBinNum < numBinsInDay; ++timeBinNum) {
+          const hour = binNum2Hour[timeBinNum];
 
           if (
             month === dlsStart.month &&
@@ -112,6 +112,7 @@ const getNumBinsPerTimePeriodForYear = memoizeOne(
 );
 
 module.exports = {
+  getDaylightSavingsStartDateForYear,
   getNumBinsInDayForTimeBinSize,
   buildTimeBinNum2HourTable,
   buildDate2DowTableForYear,

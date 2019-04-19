@@ -1,9 +1,17 @@
 const { snakeCase } = require('lodash');
-const { EAV, VERBOSE } = require('../../enums/outputFormats');
-const verboseFormatter = require('../../utils/verboseOutputFormatter');
+const { EAV } = require('../../enums/outputFormats');
+
+const basicOutputFormatters = require('../../utils/basicOutputFormatters');
+
+const attributeNames = [
+  'speedReductionFactor',
+  'peakSpeedDifferential',
+  'tmcCongestionLevel',
+  'tmcDirectionality'
+];
 
 function eavFormatter(output) {
-  const { tmc, trafficDistributionFactors } = output;
+  const { tmc } = output;
 
   const baseFields = {
     tmc,
@@ -14,21 +22,14 @@ function eavFormatter(output) {
     data_source: this.npmrdsDataSource
   };
 
-  const formatted = [];
-
-  formatted.push(
-    ...Object.keys(trafficDistributionFactors).map(factor =>
-      Object.assign({}, baseFields, {
-        attribute: snakeCase(factor),
-        value: trafficDistributionFactors[factor]
-      })
-    )
+  const formatted = attributeNames.map(attrName =>
+    Object.assign({}, baseFields, {
+      attribute: snakeCase(attrName),
+      value: output[attrName]
+    })
   );
 
   return formatted;
 }
 
-module.exports = {
-  [VERBOSE]: verboseFormatter,
-  [EAV]: eavFormatter
-};
+module.exports = { [EAV]: eavFormatter, ...basicOutputFormatters };

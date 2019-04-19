@@ -1,5 +1,5 @@
 module.exports = {
   EAV: 'EAV',
-  // HPMS: 'HPMS',
+  IDENTITY: 'IDENTITY',
   VERBOSE: 'VERBOSE'
 };

@@ -7,6 +7,7 @@ const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdent
 
 const { getNpmrdsDataKey } = require('../../utils/NpmrdsDataKey');
 
+const { FREEWAY } = require('../../enums/functionalClasses');
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
 const npmrdsDataSources = Object.keys(npmrdsDataSourcesEnum);
@@ -34,6 +35,7 @@ const outputFormatters = require('./TrafficDistributionFactorsOutputFormatters')
 
 const TRAFFIC_DISTRIBUTION_FACTORS = 'TRAFFIC_DISTRIBUTION_FACTORS';
 
+// See [FHWA PM3 Recommended Procedures](../../../documentation/FHWA_PM3_RecommendedProcedures.pdf)
 class TrafficDistributionFactorsCalculator {
   constructor(calcConfigParams) {
     this.year = calcConfigParams.year;
@@ -47,10 +49,13 @@ class TrafficDistributionFactorsCalculator {
     Object.keys(TrafficDistributionFactorsCalculator.configDefaults).forEach(
       k => {
         this[k] =
-          calcConfigParams[k] ||
-          TrafficDistributionFactorsCalculator.configDefaults[k];
+          calcConfigParams[k] === undefined
+            ? TrafficDistributionFactorsCalculator.configDefaults[k]
+            : calcConfigParams[k] === undefined;
       }
     );
+
+    this.speedBased = this.npmrdsMetric === SPEED;
 
     const timePeriodSpecDef =
       this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
@@ -60,9 +65,18 @@ class TrafficDistributionFactorsCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpecDef);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+
+    this.requiredTmcMetadata = ['functionalClass'];
+
+    if (!this.speedBased) {
+      this.requiredTmcMetadata.push('miles');
+    }
   }
 
-  async calculateForTmc({ data, attrs: { tmc } }) {
+  async calculateForTmc({
+    data,
+    attrs: { tmc, miles: tmcMiles, functionalClass: tmcFunctionalClass }
+  }) {
     const {
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
@@ -99,28 +113,78 @@ class TrafficDistributionFactorsCalculator {
       }
     }
 
-    const metricSuffix = this.npmrdsMetric === SPEED ? 'Speed' : 'TT';
+    const combinedPeakAvgTT = this.speedBased
+      ? null
+      : combinedPeak[1] / combinedPeak[0];
 
-    const trafficDistributionFactors = {
-      [`combinedPeakAvg${metricSuffix}`]: precisionRound(
-        combinedPeak[1] / combinedPeak[0],
-        3
-      ),
-      [`amPeakAvg${metricSuffix}`]: precisionRound(amPeak[1] / amPeak[0], 3),
-      [`pmPeakAvg${metricSuffix}`]: precisionRound(pmPeak[1] / pmPeak[0], 3),
-      [`freeFlowAvg${metricSuffix}`]: precisionRound(
-        freeFlow[1] / freeFlow[0],
-        3
-      )
-    };
+    const amPeakAvgTT = this.speedBased ? null : amPeak[1] / amPeak[0];
+    const pmPeakAvgTT = this.speedBased ? null : pmPeak[1] / pmPeak[0];
+    const freeFlowAvgTT = this.speedBased ? null : freeFlow[1] / freeFlow[0];
+
+    const combinedPeakAvgSpeed = this.speedBased
+      ? combinedPeak[1] / combinedPeak[0]
+      : (tmcMiles / combinedPeakAvgTT) * 3600;
+
+    const amPeakAvgSpeed = this.speedBased
+      ? amPeak[1] / amPeak[0]
+      : (tmcMiles / amPeakAvgTT) * 3600;
+
+    const pmPeakAvgSpeed = this.speedBased
+      ? pmPeak[1] / pmPeak[0]
+      : (tmcMiles / pmPeakAvgTT) * 3600;
+
+    const freeFlowAvgSpeed = this.speedBased
+      ? freeFlow[1] / freeFlow[0]
+      : (tmcMiles / freeFlowAvgTT) * 3600;
+
+    const speedReductionFactor = combinedPeakAvgSpeed / freeFlowAvgSpeed;
+
+    let congestionLevel;
+
+    // see [HPMS Field Manual Dec2016 Table 3.16](../../../documentation/hpms_field_manual_dec2016.pdf)
+    if (tmcFunctionalClass === FREEWAY) {
+      // Freeway
+      if (!speedReductionFactor || speedReductionFactor >= 0.9) {
+        congestionLevel = 'NO2LOW_CONGESTION';
+      } else if (speedReductionFactor >= 0.75) {
+        congestionLevel = 'MODERATE_CONGESTION';
+      } else {
+        congestionLevel = 'SEVERE_CONGESTION';
+      }
+
+      // Not freeway
+    } else if (!speedReductionFactor || speedReductionFactor >= 0.8) {
+      congestionLevel = 'NO2LOW_CONGESTION';
+    } else if (speedReductionFactor >= 0.65) {
+      congestionLevel = 'MODERATE_CONGESTION';
+    } else {
+      congestionLevel = 'SEVERE_CONGESTION';
+    }
+
+    const peakSpeedDifferential = Math.abs(amPeakAvgSpeed - pmPeakAvgSpeed);
+
+    let directionality;
+
+    if (!peakSpeedDifferential || peakSpeedDifferential <= 6) {
+      directionality = 'EVEN_DIST';
+    } else {
+      directionality = amPeakAvgSpeed < pmPeakAvgSpeed ? 'AM_PEAK' : 'PM_PEAK';
+    }
 
     return this.outputFormatter({
       tmc,
-      npmrdsDataKey: this.npmrdsDataKeys[0],
-      amPeak,
-      pmPeak,
-      freeFlow,
-      trafficDistributionFactors
+      combinedPeakAvgTT: precisionRound(combinedPeakAvgTT, 3),
+      amPeakAvgTT: precisionRound(amPeakAvgTT, 3),
+      pmPeakAvgTT: precisionRound(pmPeakAvgTT, 3),
+      freeFlowAvgTT: precisionRound(freeFlowAvgTT, 3),
+      combinedPeakAvgSpeed: precisionRound(combinedPeakAvgSpeed, 3),
+      amPeakAvgSpeed: precisionRound(amPeakAvgSpeed, 3),
+      pmPeakAvgSpeed: precisionRound(pmPeakAvgSpeed, 3),
+      freeFlowAvgSpeed: precisionRound(freeFlowAvgSpeed, 3),
+      speedReductionFactor: precisionRound(speedReductionFactor, 3),
+      peakSpeedDifferential: precisionRound(peakSpeedDifferential, 3),
+      congestionLevel,
+      directionality
     });
   }
 }

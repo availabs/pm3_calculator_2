@@ -44,7 +44,9 @@ class PercentBinsReportingCalculator {
 
     Object.keys(PercentBinsReportingCalculator.configDefaults).forEach(k => {
       this[k] =
-        calcConfigParams[k] || PercentBinsReportingCalculator.configDefaults[k];
+        calcConfigParams[k] === undefined
+          ? PercentBinsReportingCalculator.configDefaults[k]
+          : calcConfigParams[k] === undefined;
     });
 
     const timePeriodSpec =

@@ -1,3 +1,7 @@
+const { IDENTITY, VERBOSE } = require('../enums/outputFormats');
+
+const identityFormatter = output => output;
+
 function verboseFormatter(output) {
   return Object.assign(
     {},
@@ -12,4 +16,7 @@ function verboseFormatter(output) {
   );
 }
 
-module.exports = verboseFormatter;
+module.exports = {
+  [IDENTITY]: identityFormatter,
+  [VERBOSE]: verboseFormatter
+};

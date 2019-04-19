@@ -15,10 +15,10 @@ const { end } = require('./src/storage/services/DBService');
 
 const { getRequestedTmcs } = require('./src/requestedTmcs');
 
-const { getMetadataForTmcs } = require('./src/storage/daos/TmcDao');
+const { getMetadataForTmcs } = require('./src/storage/daos/TmcMetadataDao');
 const {
   getBinnedYearNpmrdsDataForTmc
-} = require('./src/storage/daos/NpmrdsDataDAO');
+} = require('./src/storage/daos/NpmrdsDataDao');
 
 const NpmrdsDataEnricher = require('./src/utils/NpmrdsDataEnricher');
 
@@ -39,7 +39,7 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       calculators: compositeCalculator.calculators
     });
 
-    const { npmrdsDataKeys, requiredTmcAttributes } = compositeCalculator;
+    const { npmrdsDataKeys, requiredTmcMetadata } = compositeCalculator;
 
     const tmcs = await getRequestedTmcs(calculatorSettings);
     const bar = new ProgressBar(
@@ -47,7 +47,7 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       { total: tmcs.length }
     );
 
-    const attrsSet = new Set(requiredTmcAttributes);
+    const attrsSet = new Set(requiredTmcMetadata);
     attrsSet.add('state');
 
     const tmcsAttrsArr = await getMetadataForTmcs({

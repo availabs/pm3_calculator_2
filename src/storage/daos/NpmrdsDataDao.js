@@ -1,5 +1,10 @@
 const { query } = require('../services/DBService');
-const { cartesianProduct, uniq } = require('../../utils/SetUtils');
+const {
+  cartesianProduct,
+  intersection,
+  union,
+  uniq
+} = require('../../utils/SetUtils');
 
 const {
   TRAVEL_TIME,
@@ -42,23 +47,23 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
 
     const metricValueExpression =
       npmrdsMetric === TRAVEL_TIME
-        ? npmrdsTableCol
-        : `(attr.miles / ${npmrdsTableCol} * 3600)`;
+        ? `NULLIF(${npmrdsTableCol}::NUMERIC, 0)::NUMERIC`
+        : `(attr.miles::NUMERIC / NULLIF(${npmrdsTableCol}::NUMERIC, 0)::NUMERIC * 3600::NUMERIC)`;
 
     if (meanType === ARITHMETIC) {
       acc[npmrdsDataKey] = `
-        AVG(${metricValueExpression}) AS ${npmrdsDataKey}`;
+        AVG(${metricValueExpression})::NUMERIC AS ${npmrdsDataKey}`;
     } else if (meanType === HARMONIC) {
       acc[npmrdsDataKey] = `
         (
-          COUNT(${npmrdsTableCol})::DOUBLE PRECISION
+          COUNT(${npmrdsTableCol})::NUMERIC
           /
           SUM(
-            1::DOUBLE PRECISION
+            1::NUMERIC
             /
-            ${metricValueExpression}::DOUBLE PRECISION
-          )
-        ) AS ${npmrdsDataKey}`;
+            ${metricValueExpression}
+          )::NUMERIC
+        )::NUMERIC AS ${npmrdsDataKey}`;
     }
   } else if (npmrdsMetric === DATA_DENSITY) {
     const npmrdsTableCol = getNpmrdsTableColumn(params);
@@ -67,6 +72,11 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
 
   return acc;
 }, {});
+
+const allNpmrdsDataKeys = Object.keys(npmrdsDataKey2SqlTable);
+const numericFieldNpmrdsDataKeys = allNpmrdsDataKeys.filter(
+  k => parseNpmrdsDataKey(k).npmrdsMetric !== DATA_DENSITY
+);
 
 const getBinnedYearNpmrdsDataForTmc = async ({
   year,
@@ -110,8 +120,9 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 
   const sql = `
     SELECT
+        tmc,
         to_char(date, 'YYYY-MM-DD') AS date,
-        FLOOR(epoch / ${epochsPerBin})::SMALLINT AS timebin_num,
+        FLOOR(epoch::NUMERIC / ${epochsPerBin}::NUMERIC)::SMALLINT AS "timeBinNum",
         ${cols}
       FROM ${schema}.npmrds${
     requiresTmcLength
@@ -125,7 +136,7 @@ const getBinnedYearNpmrdsDataForTmc = async ({
           (date >= $2) AND (date < $3)
         )
       )
-      GROUP BY date, FLOOR(epoch / ${epochsPerBin})::SMALLINT
+      GROUP BY tmc, date, FLOOR(epoch::NUMERIC / ${epochsPerBin}::NUMERIC)::SMALLINT
   `;
 
   const q = {
@@ -134,6 +145,16 @@ const getBinnedYearNpmrdsDataForTmc = async ({
   };
 
   const { rows } = await query(q);
+
+  // NOTE: pg-node return NUMERIC values as strings
+  rows.forEach(row => {
+    union(intersection(numericFieldNpmrdsDataKeys, npmrdsDataKeys)).forEach(
+      k => {
+        // eslint-disable-next-line no-param-reassign
+        row[k] = row[k] === null ? null : +row[k];
+      }
+    );
+  });
 
   return rows;
 };

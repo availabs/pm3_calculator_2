@@ -1,0 +1,19 @@
+const supportedDerrivedMetadataFields = [
+  'directionalAadt',
+  'avgVehicleOccupancy',
+  'congestionLevel',
+  'directionality',
+  'combinedPeakAvgTT',
+  'amPeakAvgTT',
+  'pmPeakAvgTT',
+  'freeFlowAvgTT',
+  'speedReductionFactor',
+  'peakTimeDifferential',
+  'peakSpeedDifferential',
+  'trafficDistributionProfile',
+  'trafficVolumesByDowByHour',
+  'directionalAadt',
+  'avgVehicleOccupancy',
+  'trafficDistributionProfile',
+  'trafficVolumesByDowByHour'
+];

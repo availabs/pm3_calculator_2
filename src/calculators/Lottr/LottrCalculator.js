@@ -50,7 +50,10 @@ class LottrCalculator {
     );
 
     Object.keys(LottrCalculator.configDefaults).forEach(k => {
-      this[k] = calcConfigParams[k] || LottrCalculator.configDefaults[k];
+      this[k] =
+        calcConfigParams[k] === undefined
+          ? LottrCalculator.configDefaults[k]
+          : calcConfigParams[k] === undefined;
     });
 
     const timePeriodSpecDef =

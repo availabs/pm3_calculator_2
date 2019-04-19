@@ -66,7 +66,10 @@ class TttrCalculator {
     );
 
     Object.keys(TttrCalculator.configDefaults).forEach(k => {
-      this[k] = calcConfigParams[k] || TttrCalculator.configDefaults[k];
+      this[k] =
+        calcConfigParams[k] === undefined
+          ? TttrCalculator.configDefaults[k]
+          : calcConfigParams[k] === undefined;
     });
 
     const timePeriodSpec =
