@@ -51,7 +51,7 @@ class TrafficDistributionFactorsCalculator {
         this[k] =
           calcConfigParams[k] === undefined
             ? TrafficDistributionFactorsCalculator.configDefaults[k]
-            : calcConfigParams[k] === undefined;
+            : calcConfigParams[k];
       }
     );
 

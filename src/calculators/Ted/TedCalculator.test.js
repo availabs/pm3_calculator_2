@@ -14,7 +14,8 @@ const { precisionRound } = require('../../utils/MathUtils');
 const { getDaylightSavingsStartDateForYear } = require('../../utils/TimeUtils');
 const { IDENTITY } = require('../../enums/outputFormats');
 const { FREEWAY } = require('../../enums/functionalClasses');
-const PhedCalculator = require('./PhedCalculator');
+
+const TedCalculator = require('./TedCalculator');
 
 const TMC = '104+04107';
 const YEAR = 2017;
@@ -26,7 +27,7 @@ const CLOSENESS_PRECISION = 9;
 const timeBinSizes = [5, 15, 60];
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
-  test(`PHED excess delay hours`, async done => {
+  test(`TED excess delay hours`, async done => {
     const attrs = {
       tmc: 'foobar',
       miles: 2,
@@ -41,13 +42,13 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
     assert(Number.isSafeInteger(thresholdTravelTimeSec));
 
-    const phedCalculator = new PhedCalculator({
+    const tedCalculator = new TedCalculator({
       year: YEAR,
       timeBinSize,
       outputFormat: IDENTITY
     });
 
-    const [npmrdsDataKey] = phedCalculator.npmrdsDataKeys;
+    const [npmrdsDataKey] = tedCalculator.npmrdsDataKeys;
 
     const {
       month: dlsMonth,
@@ -97,34 +98,23 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     let expectedXdelayHrs = 0;
 
     data.forEach(row => {
-      const { dow, hour } = row;
-
-      const isPeak =
-        dow % 6 && ((hour >= 6 && hour < 10) || (hour >= 16 && hour < 20));
-
-      if (isPeak) {
-        if (Math.random() > 0.5) {
-          const delaySecs = Math.random() * 1000;
-          const tt = thresholdTravelTimeSec + delaySecs;
-          expectedXdelayHrs += precisionRound(
-            Math.min(
-              precisionRound(tt - thresholdTravelTimeSec),
-              timeBinSize * 60
-            ) / 3600,
-            3
-          );
-          row[npmrdsDataKey] = tt;
-        } else {
-          row[npmrdsDataKey] = (thresholdTravelTimeSec - 10) * Math.random();
-        }
+      if (Math.random() > 0.5) {
+        const delaySecs = Math.random() * 1000;
+        const tt = thresholdTravelTimeSec + delaySecs;
+        expectedXdelayHrs += precisionRound(
+          Math.min(
+            precisionRound(tt - thresholdTravelTimeSec),
+            timeBinSize * 60
+          ) / 3600,
+          3
+        );
+        row[npmrdsDataKey] = tt;
       } else {
-        row[npmrdsDataKey] =
-          thresholdTravelTimeSec * Math.random() +
-          thresholdTravelTimeSec * Math.random();
+        row[npmrdsDataKey] = (thresholdTravelTimeSec - 10) * Math.random();
       }
     });
 
-    const result = await phedCalculator.calculateForTmc({ data, attrs });
+    const result = await tedCalculator.calculateForTmc({ data, attrs });
 
     expect(result.thresholdTravelTimeSec).toEqual(thresholdTravelTimeSec);
     expect(result.totalXDelayHrs).toBeCloseTo(
@@ -137,7 +127,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 });
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
-  test(`PHED excess delay hours`, async done => {
+  test(`TED excess delay hours`, async done => {
     const sql = `
       SELECT
           tmc,
@@ -174,14 +164,6 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
                     (date >= '20170101')
                     AND
                     (date < '20180101')
-                    AND
-                    (
-                      (epoch BETWEEN (6*12) AND (10*12 - 1))
-                      OR
-                      (epoch BETWEEN (16*12) AND (20*12 - 1))
-                    )
-                    AND
-                    ( EXTRACT(DOW FROM date) BETWEEN 1 AND 5 )
                   )
                   GROUP BY tmc, date, FLOOR(epoch / (${timeBinSize} / 5))
                 ) AS t1 INNER JOIN (
@@ -210,20 +192,20 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const { rows } = await query(sql);
     const [{ total_xdelay: expectedXdelayHrs }] = rows;
 
-    const phedCalculator = new PhedCalculator({
+    const tedCalculator = new TedCalculator({
       year: YEAR,
       timeBinSize,
       outputFormat: IDENTITY
     });
 
-    const { requiredTmcMetadata } = phedCalculator;
+    const { requiredTmcMetadata } = tedCalculator;
     const [attrs] = await getMetadataForTmcs({
       year: YEAR,
       tmcs: TMC,
       columns: requiredTmcMetadata
     });
 
-    const { npmrdsDataKeys } = phedCalculator;
+    const { npmrdsDataKeys } = tedCalculator;
 
     const data = await getBinnedYearNpmrdsDataForTmc({
       year: YEAR,
@@ -235,7 +217,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
     NpmrdsDataEnricher.enrichData({ year: YEAR, timeBinSize, data });
 
-    const result = await phedCalculator.calculateForTmc({ data, attrs });
+    const result = await tedCalculator.calculateForTmc({ data, attrs });
 
     expect(result.totalXDelayHrs).toBeCloseTo(
       +expectedXdelayHrs,

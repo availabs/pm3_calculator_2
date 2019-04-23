@@ -36,6 +36,7 @@ const defaultTimePeriodSpec = pick(
 const outputFormatters = require('./LottrOutputFormatters');
 
 const LOTTR = 'LOTTR';
+const TWENTIETH_PCTL = 0.2;
 const FIFTIETH_PCTL = 0.5;
 const EIGHTIETH_PCTL = 0.8;
 
@@ -53,7 +54,7 @@ class LottrCalculator {
       this[k] =
         calcConfigParams[k] === undefined
           ? LottrCalculator.configDefaults[k]
-          : calcConfigParams[k] === undefined;
+          : calcConfigParams[k];
     });
 
     const timePeriodSpecDef =
@@ -64,6 +65,8 @@ class LottrCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpecDef);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+
+    this.isSpeedBased = this.npmrdsMetric === SPEED;
   }
 
   async calculateForTmc({ data, attrs: { tmc } }) {
@@ -78,9 +81,7 @@ class LottrCalculator {
 
       if (timePeriod && metricValue !== null) {
         acc[timePeriod] = acc[timePeriod] || [];
-        acc[timePeriod].push(
-          this.npmrdsMetric === SPEED ? 1 / metricValue : metricValue
-        );
+        acc[timePeriod].push(metricValue);
       }
 
       return acc;
@@ -90,68 +91,86 @@ class LottrCalculator {
       metricValues.sort(numbersComparator)
     );
 
-    const fiftiethPctlsByTimePeriod = Object.keys(
-      metricValuesByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = quantileSorted(
-        metricValuesByTimePeriod[timePeriod],
-        FIFTIETH_PCTL
-      );
-      return acc;
-    }, {});
+    const fiftiethPctlTravelTimeByTimePeriod = this.isSpeedBased
+      ? null
+      : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            FIFTIETH_PCTL
+          );
 
-    const eightiethPctlsByTimePeriod = Object.keys(
-      metricValuesByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = quantileSorted(
-        metricValuesByTimePeriod[timePeriod],
-        EIGHTIETH_PCTL
-      );
-      return acc;
-    }, {});
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {});
+
+    const fiftiethPctlSpeedByTimePeriod = this.isSpeedBased
+      ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            FIFTIETH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {})
+      : null;
+
+    const eightiethPctlTravelTimeByTimePeriod = this.isSpeedBased
+      ? null
+      : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            EIGHTIETH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {});
+
+    const twentiethPctlSpeedByTimePeriod = this.isSpeedBased
+      ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            TWENTIETH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {})
+      : null;
 
     const lottrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const fiftiethPctl = fiftiethPctlsByTimePeriod[timePeriod];
-        const eightiethPctl = eightiethPctlsByTimePeriod[timePeriod];
+        const lottr = this.isSpeedBased
+          ? fiftiethPctlSpeedByTimePeriod[timePeriod] /
+            twentiethPctlSpeedByTimePeriod[timePeriod]
+          : eightiethPctlTravelTimeByTimePeriod[timePeriod] /
+            fiftiethPctlTravelTimeByTimePeriod[timePeriod];
 
-        acc[timePeriod] = precisionRound(eightiethPctl / fiftiethPctl, 2);
+        acc[timePeriod] = this.roundTravelTimes
+          ? precisionRound(lottr, 2)
+          : lottr;
+
         return acc;
       },
       {}
     );
 
-    const eightiethPctlsByTimePeriodRounded = Object.keys(
-      eightiethPctlsByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = precisionRound(
-        this.npmrdsMetric === SPEED
-          ? 1 / eightiethPctlsByTimePeriod[timePeriod]
-          : eightiethPctlsByTimePeriod[timePeriod]
-      );
-      return acc;
-    }, {});
+    const result = Object.assign(
+      {
+        tmc,
+        npmrdsDataKey,
+        lottrByTimePeriod
+      },
+      this.isSpeedBased
+        ? { fiftiethPctlSpeedByTimePeriod, twentiethPctlSpeedByTimePeriod }
+        : {
+            fiftiethPctlTravelTimeByTimePeriod,
+            eightiethPctlTravelTimeByTimePeriod
+          }
+    );
 
-    const fiftiethPctlsByTimePeriodRounded = Object.keys(
-      fiftiethPctlsByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = precisionRound(
-        this.npmrdsMetric === SPEED
-          ? 1 / fiftiethPctlsByTimePeriod[timePeriod]
-          : fiftiethPctlsByTimePeriod[timePeriod]
-      );
-      return acc;
-    }, {});
-
-    return this.outputFormatter({
-      tmc,
-      npmrdsDataKey: this.npmrdsDataKeys[0],
-      [this.npmrdsMetric === SPEED
-        ? 'twentiethPctlsByTimePeriod'
-        : 'eightiethPctlsByTimePeriod']: eightiethPctlsByTimePeriodRounded,
-      fiftiethPctlsByTimePeriod: fiftiethPctlsByTimePeriodRounded,
-      lottrByTimePeriod
-    });
+    return this.outputFormatter(result);
   }
 }
 
@@ -160,13 +179,15 @@ LottrCalculator.configDefaults = {
   meanType: ARITHMETIC,
   npmrdsDataSource: ALL,
   npmrdsMetric: TRAVEL_TIME,
-  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  roundTravelTimes: true
 };
 LottrCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
-  timePeriodSpec: timePeriodSpecNames
+  timePeriodSpec: timePeriodSpecNames,
+  roundTravelTimes: [true, false]
 };
 LottrCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 

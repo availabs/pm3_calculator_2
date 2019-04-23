@@ -6,9 +6,10 @@ const basicOutputFormatters = require('../../utils/basicOutputFormatters');
 function eavFormatter(output) {
   const {
     tmc,
-    twentiethPctlsByTimePeriod = {},
-    fiftiethPctlsByTimePeriod = {},
-    eightiethPctlsByTimePeriod = {},
+    fiftiethPctlSpeedByTimePeriod = {},
+    twentiethPctlSpeedByTimePeriod = {},
+    fiftiethPctlTravelTimeByTimePeriod = {},
+    eightiethPctlTravelTimeByTimePeriod = {},
     lottrByTimePeriod = {}
   } = output;
 
@@ -24,28 +25,37 @@ function eavFormatter(output) {
   const formatted = [];
 
   formatted.push(
-    ...Object.keys(twentiethPctlsByTimePeriod).map(timePeriod =>
-      Object.assign({}, baseFields, {
-        attribute: lowerCase(`${timePeriod}_20pct`),
-        value: twentiethPctlsByTimePeriod[timePeriod]
-      })
-    )
-  );
-
-  formatted.push(
-    ...Object.keys(fiftiethPctlsByTimePeriod).map(timePeriod =>
+    ...Object.keys(fiftiethPctlTravelTimeByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
         attribute: snakeCase(lowerCase(`${timePeriod}_50pct`)),
-        value: fiftiethPctlsByTimePeriod[timePeriod]
+        value: fiftiethPctlTravelTimeByTimePeriod[timePeriod]
       })
     )
   );
 
   formatted.push(
-    ...Object.keys(eightiethPctlsByTimePeriod).map(timePeriod =>
+    ...Object.keys(eightiethPctlTravelTimeByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
         attribute: snakeCase(lowerCase(`${timePeriod}_80pct`)),
-        value: eightiethPctlsByTimePeriod[timePeriod]
+        value: eightiethPctlTravelTimeByTimePeriod[timePeriod]
+      })
+    )
+  );
+
+  formatted.push(
+    ...Object.keys(twentiethPctlSpeedByTimePeriod).map(timePeriod =>
+      Object.assign({}, baseFields, {
+        attribute: snakeCase(lowerCase(`${timePeriod}_20pct`)),
+        value: twentiethPctlSpeedByTimePeriod[timePeriod]
+      })
+    )
+  );
+
+  formatted.push(
+    ...Object.keys(fiftiethPctlSpeedByTimePeriod).map(timePeriod =>
+      Object.assign({}, baseFields, {
+        attribute: snakeCase(lowerCase(`${timePeriod}_50pct`)),
+        value: fiftiethPctlSpeedByTimePeriod[timePeriod]
       })
     )
   );

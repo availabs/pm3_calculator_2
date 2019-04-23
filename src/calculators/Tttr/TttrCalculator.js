@@ -52,6 +52,7 @@ const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 const outputFormatters = require('./TttrOutputFormatters');
 
 const TTTR = 'TTTR';
+const FIFTH_PCTL = 0.05;
 const FIFTIETH_PCTL = 0.5;
 const NINETYFIFTH_PCTL = 0.95;
 
@@ -69,7 +70,7 @@ class TttrCalculator {
       this[k] =
         calcConfigParams[k] === undefined
           ? TttrCalculator.configDefaults[k]
-          : calcConfigParams[k] === undefined;
+          : calcConfigParams[k];
     });
 
     const timePeriodSpec =
@@ -94,9 +95,7 @@ class TttrCalculator {
 
       if (timePeriod && metricValue !== null) {
         acc[timePeriod] = acc[timePeriod] || [];
-        acc[timePeriod].push(
-          this.npmrdsMetric === SPEED ? 1 / metricValue : metricValue
-        );
+        acc[timePeriod].push(metricValue);
       }
 
       return acc;
@@ -106,68 +105,86 @@ class TttrCalculator {
       metricValues.sort(numbersComparator)
     );
 
-    const fiftiethPctlsByTimePeriod = Object.keys(
-      metricValuesByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = quantileSorted(
-        metricValuesByTimePeriod[timePeriod],
-        FIFTIETH_PCTL
-      );
-      return acc;
-    }, {});
+    const fiftiethPctlTravelTimeByTimePeriod = this.isSpeedBased
+      ? null
+      : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            FIFTIETH_PCTL
+          );
 
-    const ninetyFifthPctlsByTimePeriod = Object.keys(
-      metricValuesByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = quantileSorted(
-        metricValuesByTimePeriod[timePeriod],
-        NINETYFIFTH_PCTL
-      );
-      return acc;
-    }, {});
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {});
 
-    const lottrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
+    const fiftiethPctlSpeedByTimePeriod = this.isSpeedBased
+      ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            FIFTIETH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {})
+      : null;
+
+    const ninetyfifthPctlTravelTimeByTimePeriod = this.isSpeedBased
+      ? null
+      : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            NINETYFIFTH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {});
+
+    const fifthPctlSpeedByTimePeriod = this.isSpeedBased
+      ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
+          const v = quantileSorted(
+            metricValuesByTimePeriod[timePeriod],
+            FIFTH_PCTL
+          );
+
+          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
+          return acc;
+        }, {})
+      : null;
+
+    const tttrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const fiftiethPctl = fiftiethPctlsByTimePeriod[timePeriod];
-        const ninetyFifthPctl = ninetyFifthPctlsByTimePeriod[timePeriod];
+        const tttr = this.isSpeedBased
+          ? fiftiethPctlSpeedByTimePeriod[timePeriod] /
+            fifthPctlSpeedByTimePeriod[timePeriod]
+          : ninetyfifthPctlTravelTimeByTimePeriod[timePeriod] /
+            fiftiethPctlTravelTimeByTimePeriod[timePeriod];
 
-        acc[timePeriod] = precisionRound(ninetyFifthPctl / fiftiethPctl, 2);
+        acc[timePeriod] = this.roundTravelTimes
+          ? precisionRound(tttr, 2)
+          : tttr;
+
         return acc;
       },
       {}
     );
 
-    const ninetyFifthPctlsByTimePeriodRounded = Object.keys(
-      ninetyFifthPctlsByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = precisionRound(
-        this.npmrdsMetric === SPEED
-          ? 1 / ninetyFifthPctlsByTimePeriod[timePeriod]
-          : ninetyFifthPctlsByTimePeriod[timePeriod]
-      );
-      return acc;
-    }, {});
+    const result = Object.assign(
+      {
+        tmc,
+        npmrdsDataKey,
+        tttrByTimePeriod
+      },
+      this.isSpeedBased
+        ? { fiftiethPctlSpeedByTimePeriod, fifthPctlSpeedByTimePeriod }
+        : {
+            fiftiethPctlTravelTimeByTimePeriod,
+            ninetyfifthPctlTravelTimeByTimePeriod
+          }
+    );
 
-    const fiftiethPctlsByTimePeriodRounded = Object.keys(
-      fiftiethPctlsByTimePeriod
-    ).reduce((acc, timePeriod) => {
-      acc[timePeriod] = precisionRound(
-        this.npmrdsMetric === SPEED
-          ? 1 / fiftiethPctlsByTimePeriod[timePeriod]
-          : fiftiethPctlsByTimePeriod[timePeriod]
-      );
-      return acc;
-    }, {});
-
-    return this.outputFormatter({
-      tmc,
-      npmrdsDataKey: this.npmrdsDataKeys[0],
-      [this.npmrdsMetric === SPEED
-        ? 'fifthPctlsByTimePeriod'
-        : 'ninetyFifthPctlsByTimePeriod']: ninetyFifthPctlsByTimePeriodRounded,
-      fiftiethPctlsByTimePeriod: fiftiethPctlsByTimePeriodRounded,
-      lottrByTimePeriod
-    });
+    return this.outputFormatter(result);
   }
 }
 
@@ -176,13 +193,15 @@ TttrCalculator.configDefaults = {
   meanType: ARITHMETIC,
   npmrdsDataSource: TRUCK,
   npmrdsMetric: TRAVEL_TIME,
-  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC
+  timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
+  roundTravelTimes: true
 };
 TttrCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
-  timePeriodSpec: timePeriodSpecNames
+  timePeriodSpec: timePeriodSpecNames,
+  roundTravelTimes: [true, false]
 };
 TttrCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 

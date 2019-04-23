@@ -46,7 +46,7 @@ class PercentBinsReportingCalculator {
       this[k] =
         calcConfigParams[k] === undefined
           ? PercentBinsReportingCalculator.configDefaults[k]
-          : calcConfigParams[k] === undefined;
+          : calcConfigParams[k];
     });
 
     const timePeriodSpec =

@@ -53,6 +53,37 @@ const outputFormatters = require('./PhedOutputFormatters');
 const PHED = 'PHED';
 const SEC_PER_MINUTE = 60;
 
+const vehClass2DirAadtTypes = {
+  [ALL]: ['directionalAadt'],
+  [PASS]: ['directionalAadtPass'],
+  [TRUCK]: [
+    'directionalAadtSingl',
+    'directionalAadtCombi',
+    'directionalAadtTruck'
+  ]
+};
+
+function getDirAadtByVehClass(attrs) {
+  return this.vehClassDirAadtTypes.reduce((acc, vehClassDirAadtType) => {
+    const vehClass =
+      vehClassDirAadtType.replace(/directionalAadt/, '').toLowerCase() || 'all';
+
+    acc[vehClass] = attrs[vehClassDirAadtType];
+    return acc;
+  }, {});
+}
+
+function getAvgVehicleOccupancyByVehClass(attrs) {
+  return this.avgVehcleOccupancyTypes.reduce((acc, avgVehcleOccupancyType) => {
+    const vehClass =
+      avgVehcleOccupancyType.replace(/avgVehicleOccupancy/, '').toLowerCase() ||
+      'all';
+
+    acc[vehClass] = attrs[avgVehcleOccupancyType];
+    return acc;
+  }, {});
+}
+
 class PhedCalculator {
   constructor(calcConfigParams) {
     this.year = calcConfigParams.year;
@@ -67,7 +98,7 @@ class PhedCalculator {
       this[k] =
         calcConfigParams[k] === undefined
           ? PhedCalculator.configDefaults[k]
-          : calcConfigParams[k] === undefined;
+          : calcConfigParams[k];
     });
 
     const timePeriodSpecDef =
@@ -82,15 +113,7 @@ class PhedCalculator {
       Object.assign({}, calcConfigParams, { outputFormat: IDENTITY })
     );
 
-    this.vehClassDirAadtTypes = {
-      [ALL]: ['directionalAadt'],
-      [PASS]: ['directionalAadtPass'],
-      [TRUCK]: [
-        'directionalAadtSingl',
-        'directionalAadtCombi',
-        'directionalAadtTruck'
-      ]
-    }[this.npmrdsDataSource];
+    this.vehClassDirAadtTypes = vehClass2DirAadtTypes[this.npmrdsDataSource];
 
     this.avgVehcleOccupancyTypes = this.vehClassDirAadtTypes.map(t =>
       t.replace(/directionalAadt/, 'avgVehicleOccupancy')
@@ -103,13 +126,12 @@ class PhedCalculator {
     );
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+
+    this.isSpeedBased = this.npmrdsMetric === SPEED;
   }
 
   async calculateForTmc({ data, attrs }) {
     const {
-      npmrdsMetric,
-      vehClassDirAadtTypes,
-      avgVehcleOccupancyTypes,
       npmrdsDataKeys: [npmrdsDataKey],
       timeBinSize,
       trafficDistributionTimeBinSize,
@@ -119,29 +141,11 @@ class PhedCalculator {
 
     const { tmc, avgSpeedlimit, functionalClass, miles } = attrs;
 
-    const dirAadtByVehClass = vehClassDirAadtTypes.reduce(
-      (acc, vehClassDirAadtType) => {
-        const vehClass =
-          vehClassDirAadtType.replace(/directionalAadt/, '').toLowerCase() ||
-          'all';
+    const dirAadtByVehClass = getDirAadtByVehClass.call(this, attrs);
 
-        acc[vehClass] = attrs[vehClassDirAadtType];
-        return acc;
-      },
-      {}
-    );
-
-    const avgVehicleOccupancyByVehClass = avgVehcleOccupancyTypes.reduce(
-      (acc, avgVehcleOccupancyType) => {
-        const vehClass =
-          avgVehcleOccupancyType
-            .replace(/avgVehicleOccupancy/, '')
-            .toLowerCase() || 'all';
-
-        acc[vehClass] = attrs[avgVehcleOccupancyType];
-        return acc;
-      },
-      {}
+    const avgVehicleOccupancyByVehClass = getAvgVehicleOccupancyByVehClass.call(
+      this,
+      attrs
     );
 
     const {
@@ -162,8 +166,6 @@ class PhedCalculator {
         timeBinSize
       }
     );
-
-    const isSpeedBased = npmrdsMetric === SPEED;
 
     const thresholdSpeed = Math.max(avgSpeedlimit * 0.6, 20);
 
@@ -186,7 +188,9 @@ class PhedCalculator {
 
       acc[timePeriod] = acc[timePeriod] || [];
 
-      const ttReal = isSpeedBased ? (miles / metricValue) * 3600 : metricValue;
+      const ttReal = this.isSpeedBased
+        ? (miles / metricValue) * 3600
+        : metricValue;
       const tt = roundTravelTimes ? precisionRound(ttReal) : ttReal;
 
       // TODO: Document the nuances of switching npmrdsMetrics

@@ -6,9 +6,10 @@ const basicOutputFormatters = require('../../utils/basicOutputFormatters');
 function eavFormatter(output) {
   const {
     tmc,
-    fifthPctlsByTimePeriod = {},
-    fiftiethPctlsByTimePeriod = {},
-    ninetyFifthPctlsByTimePeriod = {},
+    fiftiethPctlSpeedByTimePeriod = {},
+    fifthPctlSpeedByTimePeriod = {},
+    fiftiethPctlTravelTimeByTimePeriod = {},
+    ninetyfifthPctlTravelTimeByTimePeriod = {},
     tttrByTimePeriod = {}
   } = output;
 
@@ -24,31 +25,37 @@ function eavFormatter(output) {
   const formatted = [];
 
   formatted.push(
-    ...Object.keys(fifthPctlsByTimePeriod).map(timePeriod =>
+    ...Object.keys(fiftiethPctlTravelTimeByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(lowerCase(`${timePeriod}_20pct`))]: fifthPctlsByTimePeriod[
-          timePeriod
-        ]
+        attribute: snakeCase(lowerCase(`${timePeriod}_50pct`)),
+        value: fiftiethPctlTravelTimeByTimePeriod[timePeriod]
       })
     )
   );
 
   formatted.push(
-    ...Object.keys(fiftiethPctlsByTimePeriod).map(timePeriod =>
+    ...Object.keys(ninetyfifthPctlTravelTimeByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(
-          lowerCase(`${timePeriod}_50pct`)
-        )]: fiftiethPctlsByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}_95pct`)),
+        value: ninetyfifthPctlTravelTimeByTimePeriod[timePeriod]
       })
     )
   );
 
   formatted.push(
-    ...Object.keys(ninetyFifthPctlsByTimePeriod).map(timePeriod =>
+    ...Object.keys(fifthPctlSpeedByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(
-          lowerCase(`${timePeriod}_80pct`)
-        )]: ninetyFifthPctlsByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}_5pct`)),
+        value: fifthPctlSpeedByTimePeriod[timePeriod]
+      })
+    )
+  );
+
+  formatted.push(
+    ...Object.keys(fiftiethPctlSpeedByTimePeriod).map(timePeriod =>
+      Object.assign({}, baseFields, {
+        attribute: snakeCase(lowerCase(`${timePeriod}_50pct`)),
+        value: fiftiethPctlSpeedByTimePeriod[timePeriod]
       })
     )
   );
@@ -56,7 +63,8 @@ function eavFormatter(output) {
   formatted.push(
     ...Object.keys(tttrByTimePeriod).map(timePeriod =>
       Object.assign({}, baseFields, {
-        [snakeCase(lowerCase(`${timePeriod}`))]: tttrByTimePeriod[timePeriod]
+        attribute: snakeCase(lowerCase(`${timePeriod}`)),
+        value: tttrByTimePeriod[timePeriod]
       })
     )
   );
