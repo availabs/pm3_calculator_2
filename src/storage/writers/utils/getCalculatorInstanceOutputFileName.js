@@ -4,7 +4,6 @@ const measureOutputFileCounts = {};
 
 const getCalculatorInstanceOutputFileName = ({
   calculator,
-  outputTimestamp,
   outputFileFormat
 }) => {
   const { measure } = calculator.constructor;
@@ -14,7 +13,7 @@ const getCalculatorInstanceOutputFileName = ({
 
   const filename = `${lowerCase(measure)}-${
     measureOutputFileCounts[measure]
-  }.${outputTimestamp}.${lowerCase(outputFileFormat)}`;
+  }.${lowerCase(outputFileFormat)}`;
 
   return filename;
 };

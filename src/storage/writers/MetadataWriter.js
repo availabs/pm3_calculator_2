@@ -5,7 +5,10 @@ const { lowerCase } = require('lodash');
 
 const writeFileAsync = promisify(writeFile);
 
-const { getReferencedDatabaseTables } = require('../daos/DBStateDao');
+const {
+  connectionInfo,
+  getReferencedDatabaseTables
+} = require('../daos/DBStateDao');
 const GitRepoState = require('../../utils/GitRepoState');
 
 const getCalculatorInstanceConfig = require('../../utils/getCalculatorInstanceConfig');
@@ -19,10 +22,10 @@ class MetadataWriter {
     outputFileFormat,
     calculatorInstanceOuputFileNames
   }) {
-    this.timestamp = outputTimestamp
+    this.timestamp = outputTimestamp;
     this.metadataFilePath = join(
       outputDirPath,
-      `metadata.${outputTimestamp}.${lowerCase(outputFileFormat)}`
+      `metadata.${lowerCase(outputFileFormat)}`
     );
 
     this.calculatorSettings = calculatorSettings;
@@ -42,7 +45,10 @@ class MetadataWriter {
       calculatorSettings: this.calculatorSettings,
       calculators: this.calculatorsState,
       gitRepoState: GitRepoState,
-      referencedDatabaseTables
+      dbState: {
+        connectionInfo,
+        referencedDatabaseTables
+      }
     };
 
     return writeFileAsync(this.metadataFilePath, JSON.stringify(metadata));

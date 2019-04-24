@@ -1,3 +1,5 @@
+const assert = require('assert');
+
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
@@ -73,10 +75,8 @@ class TrafficDistributionFactorsCalculator {
     }
   }
 
-  async calculateForTmc({
-    data,
-    attrs: { tmc, miles: tmcMiles, functionalClass: tmcFunctionalClass }
-  }) {
+  async calculateForTmc({ data, attrs }) {
+    const { tmc, miles: tmcMiles, functionalClass: tmcFunctionalClass } = attrs;
     const {
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
@@ -88,6 +88,8 @@ class TrafficDistributionFactorsCalculator {
 
     for (let i = 0; i < data.length; ++i) {
       const row = data[i];
+
+      assert.strictEqual(row.tmc, attrs.tmc);
 
       const { [npmrdsDataKey]: metricValue } = row;
 

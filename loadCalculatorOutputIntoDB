@@ -1,0 +1,170 @@
+#!/usr/bin/env node
+
+/* eslint no-console: 0, no-await-in-loop: 0 */
+
+const { isAbsolute, join } = require('path');
+const { existsSync, readFileSync, createReadStream } = require('fs');
+const split2 = require('split2');
+const through2 = require('through2');
+const copyFrom = require('pg-copy-streams').from;
+
+const DBService = require('./src/storage/services/DBService');
+
+const calculatorOutputDir = process.argv[2];
+
+if (!calculatorOutputDir) {
+  console.error(
+    'ERROR: The calculator output directory path must be specified as the 1st cli argument.'
+  );
+  process.exit(1);
+}
+
+const calculatorOutputDirPath = isAbsolute(calculatorOutputDir)
+  ? calculatorOutputDir
+  : join(process.cwd(), calculatorOutputDir);
+
+if (!existsSync(calculatorOutputDirPath)) {
+  console.error(
+    `ERROR: The specified calculator output directory ${calculatorOutputDirPath} does not exist.`
+  );
+  process.exit(1);
+}
+
+const calculatorMetadataPath = join(calculatorOutputDirPath, 'metadata.ndjson');
+
+if (!existsSync(calculatorMetadataPath)) {
+  console.error(
+    `ERROR: ${calculatorOutputDirPath} does not contain a metadata.json file.`
+  );
+  process.exit(1);
+}
+
+const calculatorMetadata = JSON.parse(
+  readFileSync(calculatorMetadataPath, {
+    encoding: 'utf8'
+  })
+);
+
+const { calculators: pm3MeasureCalculatorsMetadata } = calculatorMetadata;
+
+const insertPM3CalculatorMetadata = async () => {
+  const {
+    rows: [{ id }]
+  } = await DBService.query(
+    'INSERT INTO public.pm3_calculator_metadata (metadata) VALUES ($1) RETURNING id',
+    [calculatorMetadata]
+  );
+
+  return id;
+};
+
+// NOTE: Will cascade and clean up pm3_measure_calculator_metadata and pm3_eav_append_only as well.
+const deletePM3CalculatorMetadata = pm3calc_id =>
+  DBService.query('DELETE FROM public.pm3_calculator_metadata WHERE id = $1', [
+    pm3calc_id
+  ]);
+
+const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
+  const pm3meacalc_ids = [];
+
+  const client = await DBService.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (let i = 0; i < pm3MeasureCalculatorsMetadata.length; ++i) {
+      const metadata = pm3MeasureCalculatorsMetadata[i];
+
+      const {
+        rows: [{ id: mid }]
+      } = await client.query(
+        'INSERT INTO public.pm3_measure_calculator_metadata (pm3calc_id, metadata) VALUES ($1, $2) RETURNING id',
+        [pm3calc_id, metadata]
+      );
+
+      pm3meacalc_ids.push(mid);
+    }
+
+    await client.query('COMMIT');
+
+    return pm3meacalc_ids;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    await client.release();
+  }
+};
+
+const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
+  Promise.all(
+    pm3meacalc_ids.map(
+      (pm3meacalc_id, i) =>
+        new Promise(async (resolve, reject) => {
+          const metadata = pm3MeasureCalculatorsMetadata[i];
+          const { outputFileName } = metadata;
+          const outputFilePath = join(calculatorOutputDir, outputFileName);
+
+          if (existsSync(outputFilePath)) {
+            const client = await DBService.pool.connect();
+
+            try {
+              const dataStream = createReadStream(outputFilePath)
+                .on('error', reject)
+                .pipe(split2(JSON.parse)) // https://github.com/mcollina/split2#ndj---newline-delimited-json
+                .pipe(
+                  through2.obj(function ndjsonTransformer(
+                    { tmc, attribute, value },
+                    _,
+                    cb
+                  ) {
+                    const v =
+                      typeof value === 'string' ? `"""${value}"""` : value;
+
+                    const row = `${pm3meacalc_id},"${tmc}","${attribute}",${v}`;
+                    this.push(Buffer.from(`${row}\n`));
+                    cb();
+                  })
+                );
+
+              const copyStream = client.query(
+                copyFrom(
+                  'COPY public.pm3_eav_append_only (pm3meacalc_id, tmc, attribute, value) FROM STDIN WITH CSV'
+                )
+              );
+
+              dataStream.on('error', reject);
+
+              copyStream.on('error', reject);
+              copyStream.on('end', resolve);
+
+              dataStream.pipe(copyStream);
+            } catch (err) {
+              reject(err);
+            } finally {
+              await client.release();
+            }
+          } else {
+            reject(
+              new Error(
+                `ERROR: measure file ${outputFilePath} is missing from the outputDir`
+              )
+            );
+          }
+        })
+    )
+  );
+
+(async () => {
+  let pm3calc_id;
+  let pm3meacalc_ids;
+  try {
+    pm3calc_id = await insertPM3CalculatorMetadata();
+    pm3meacalc_ids = await insertPM3MeasureCalculatorsMetadata(pm3calc_id);
+    await loadCalculatorsEAVOutput(pm3meacalc_ids);
+  } catch (err) {
+    await deletePM3CalculatorMetadata(pm3calc_id);
+    console.error(err.message);
+  } finally {
+    DBService.end();
+  }
+})();

@@ -56,11 +56,21 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       columns: [...attrsSet]
     });
 
+    const tmcAttrsTable = tmcsAttrsArr.reduce((acc, d) => {
+      const { tmc } = d;
+      acc[tmc] = d;
+      return acc;
+    }, {});
+
     await Promise.all(
-      tmcs.map((tmc, i) =>
+      tmcs.map(tmc =>
         limit(async () => {
           try {
-            const attrs = tmcsAttrsArr[i];
+            const attrs = tmcAttrsTable[tmc];
+            if (!attrs) {
+              return;
+            }
+
             const { state } = attrs;
 
             const data = await getBinnedYearNpmrdsDataForTmc({

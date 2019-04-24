@@ -24,6 +24,7 @@
     "njstrace": "^1.1.0",
     "p-limit": "^2.2.0",
     "pg": "^7.9.0",
+    "pg-copy-streams": "^2.2.0",
     "pg-query-parser": "^0.2.3",
     "progress": "^2.0.3",
     "simple-statistics": "^7.0.2",

@@ -1,5 +1,7 @@
 /* eslint global-require: 0 */
 
+const { pick } = require('lodash');
+
 const { Pool } = require('pg');
 
 const extractRequiredRelations = require('../../utils/extractRequiredRelations');
@@ -8,6 +10,13 @@ const { uniq } = require('../../utils/SetUtils');
 if (!process.env.PGDATABASE) {
   require('../../loadEnvFile');
 }
+
+const connectionInfo = pick(process.env, [
+  'PGDATABASE',
+  'PGUSER',
+  'PGHOST',
+  'PGPORT'
+]);
 
 const sqlLog = [];
 
@@ -47,6 +56,8 @@ const end = () => {
 };
 
 module.exports = {
+  pool,
+  connectionInfo,
   query,
   end,
   getDatabaseQueryRelationDependencies

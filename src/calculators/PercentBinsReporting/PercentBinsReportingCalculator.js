@@ -1,3 +1,5 @@
+const assert = require('assert');
+
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
 const npmrdsDataSources = Object.keys(npmrdsDataSourcesEnum);
@@ -61,12 +63,16 @@ class PercentBinsReportingCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
   }
 
-  async calculateForTmc({ data, attrs: { tmc } }) {
+  async calculateForTmc({ data, attrs }) {
+    const { tmc } = attrs;
+
     const {
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
 
     const countsByTimePeriod = data.reduce((acc, row) => {
+      assert.strictEqual(row.tmc, attrs.tmc);
+
       const { [npmrdsDataKey]: metricValue } = row;
       const timePeriod = this.timePeriodIdentifier(row);
 

@@ -18,6 +18,7 @@
 		TTT_AMP50PCT and TTT_AMP95PCT values must be in units of seconds rounded to the nearest integer,
 		as required in 23 CFR 490.611(b)(2).
 */
+const assert = require('assert');
 
 const { quantileSorted } = require('simple-statistics');
 
@@ -83,12 +84,15 @@ class TttrCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
   }
 
-  async calculateForTmc({ data, attrs: { tmc } }) {
+  async calculateForTmc({ data, attrs }) {
+    const { tmc } = attrs;
     const {
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
+      assert.strictEqual(row.tmc, attrs.tmc);
+
       const { [npmrdsDataKey]: metricValue } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);

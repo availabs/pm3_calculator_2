@@ -1,3 +1,5 @@
+const assert = require('assert');
+
 const { pick } = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
@@ -69,12 +71,15 @@ class LottrCalculator {
     this.isSpeedBased = this.npmrdsMetric === SPEED;
   }
 
-  async calculateForTmc({ data, attrs: { tmc } }) {
+  async calculateForTmc({ data, attrs }) {
+    const { tmc } = attrs;
     const {
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
+      assert.strictEqual(row.tmc, attrs.tmc);
+
       const { [npmrdsDataKey]: metricValue } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);

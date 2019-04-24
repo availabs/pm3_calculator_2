@@ -18,7 +18,6 @@ class CalculatorsOutputFilesWriter {
   constructor({
     calculators,
     outputDirPath,
-    outputTimestamp,
     outputFileFormat
   }) {
     this.calculators = calculators;
@@ -26,7 +25,6 @@ class CalculatorsOutputFilesWriter {
     this.calculatorInstanceOuputFileNames = this.calculators.map(calculator =>
       getCalculatorInstanceOutputFileName({
         calculator,
-        outputTimestamp,
         outputFileFormat
       })
     );
