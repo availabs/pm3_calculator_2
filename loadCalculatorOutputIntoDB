@@ -97,61 +97,58 @@ const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
 
 const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
   Promise.all(
-    pm3meacalc_ids.map(
-      (pm3meacalc_id, i) =>
-        new Promise(async (resolve, reject) => {
-          const metadata = pm3MeasureCalculatorsMetadata[i];
-          const { outputFileName } = metadata;
-          const outputFilePath = join(calculatorOutputDir, outputFileName);
+    pm3meacalc_ids.map(async (pm3meacalc_id, i) => {
+      const metadata = pm3MeasureCalculatorsMetadata[i];
+      const { outputFileName } = metadata;
+      const outputFilePath = join(calculatorOutputDir, outputFileName);
 
-          if (existsSync(outputFilePath)) {
-            const client = await DBService.pool.connect();
+      if (existsSync(outputFilePath)) {
+        const client = await DBService.pool.connect();
 
-            try {
-              const dataStream = createReadStream(outputFilePath)
-                .on('error', reject)
-                .pipe(split2(JSON.parse)) // https://github.com/mcollina/split2#ndj---newline-delimited-json
-                .pipe(
-                  through2.obj(function ndjsonTransformer(
-                    { tmc, attribute, value },
-                    _,
-                    cb
-                  ) {
-                    const v =
-                      typeof value === 'string' ? `"""${value}"""` : value;
+        try {
+          await new Promise(async (resolve, reject) => {
+            const dataStream = createReadStream(outputFilePath)
+              .on('error', reject)
+              .pipe(split2(JSON.parse)) // https://github.com/mcollina/split2#ndj---newline-delimited-json
+              .pipe(
+                through2.obj(function ndjsonTransformer(
+                  { tmc, attribute, value },
+                  _,
+                  cb
+                ) {
+                  const v =
+                    typeof value === 'string' ? `"""${value}"""` : value;
 
-                    const row = `${pm3meacalc_id},"${tmc}","${attribute}",${v}`;
-                    this.push(Buffer.from(`${row}\n`));
-                    cb();
-                  })
-                );
-
-              const copyStream = client.query(
-                copyFrom(
-                  'COPY public.pm3_eav_append_only (pm3meacalc_id, tmc, attribute, value) FROM STDIN WITH CSV'
-                )
+                  const row = `${pm3meacalc_id},"${tmc}","${attribute}",${v}`;
+                  this.push(Buffer.from(`${row}\n`));
+                  cb();
+                })
               );
 
-              dataStream.on('error', reject);
-
-              copyStream.on('error', reject);
-              copyStream.on('end', resolve);
-
-              dataStream.pipe(copyStream);
-            } catch (err) {
-              reject(err);
-            } finally {
-              await client.release();
-            }
-          } else {
-            reject(
-              new Error(
-                `ERROR: measure file ${outputFilePath} is missing from the outputDir`
+            const copyStream = client.query(
+              copyFrom(
+                'COPY public.pm3_eav_append_only (pm3meacalc_id, tmc, attribute, value) FROM STDIN WITH CSV'
               )
             );
-          }
-        })
-    )
+
+            dataStream.on('error', reject);
+
+            copyStream.on('error', reject);
+            copyStream.on('end', resolve);
+
+            dataStream.pipe(copyStream);
+          });
+        } catch (err) {
+          throw err;
+        } finally {
+          await client.release();
+        }
+      } else {
+        throw new Error(
+          `ERROR: measure file ${outputFilePath} is missing from the outputDir`
+        );
+      }
+    })
   );
 
 (async () => {
