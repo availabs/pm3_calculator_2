@@ -160,13 +160,15 @@ Object.keys(calculatorSettings)
 try {
   if (
     !(
+      calculatorSettings.tmcs ||
       calculatorSettings.states ||
       (calculatorSettings.geolevel &&
         (calculatorSettings.geocode || calculatorSettings.geoname))
     )
   ) {
     throw new Error(
-      'ERROR: A geography is required. Use either\n' +
+      'ERROR: A list of tmcs or a geography is required. Use either\n' +
+        '  * the tmcs flag to specify a list of tmcs\n' +
         '  * the states flag to specify a state or set of states\n' +
         '  * the geolevel flag with the either the geocode or geoname flag to specify a geographic area.'
     );

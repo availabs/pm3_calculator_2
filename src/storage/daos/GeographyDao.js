@@ -113,7 +113,7 @@ const getTmcsForGeographies = async ({ year, geographies }) => {
   ).filter(g => g);
 
   if (!geosArr.length) {
-    throw new Error('ERROR: geographies descriptors required');
+    return []
   }
 
   const {

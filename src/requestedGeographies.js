@@ -25,7 +25,7 @@ const getRequestedGeographies = async ({ states, geolevel, geocode, geoname }) =
         geographies.push(geography);
       }
     }
-  } else {
+  } else if (geolevel) {
     const geography = new Geography({
       geolevel,
       geocode,
