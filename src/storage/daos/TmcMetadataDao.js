@@ -63,7 +63,7 @@ const tmcMetadataTableColumnNames = [
 ];
 
 const buildDirAadtClause = aadtExpr =>
-  `(CASE WHEN faciltype <= 1 THEN (${aadtExpr}::NUMERIC / 2::NUMERIC) ELSE ${aadtExpr} END)`;
+  `(CASE WHEN faciltype <= 1 THEN (${aadtExpr}::NUMERIC / 2::NUMERIC) ELSE ${aadtExpr} END)::DOUBLE PRECISION`;
 
 const functionalClass = `(CASE WHEN f_system <= 2 THEN '${FREEWAY}' ELSE '${NONFREEWAY}' END)`;
 

@@ -7,6 +7,8 @@ const {
   specs: generalTimePeriodSpecs
 } = require('../timePeriods/TimePeriodSpecs');
 
+const { listTimePeriodsInSpec } = require('../timePeriods/timePeriodUtils');
+
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   TOTAL_TIME_PERIOD_SPEC
@@ -25,6 +27,8 @@ class TedCalculator extends PhedCalculator {
       this.timePeriodIdentifier = createTimePeriodIdentifier(
         defaultTimePeriodSpec
       );
+
+      this.timePeriods = listTimePeriodsInSpec(this.timePeriodSpecDef);
     }
   }
 }

@@ -16,18 +16,14 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: this.constructor.measure,
-    time_bin_size: this.timeBinSize,
-    metric: this.npmrdsMetric,
-    data_source: this.npmrdsDataSource
+    measure: this.constructor.measure
   };
 
-  const formatted = attributeNames.map(attrName =>
-    Object.assign({}, baseFields, {
-      attribute: snakeCase(attrName),
-      value: output[attrName]
-    })
-  );
+  const formatted = attributeNames.map(attrName => ({
+    ...baseFields,
+    attribute: snakeCase(attrName),
+    value: output[attrName]
+  }));
 
   return formatted;
 }

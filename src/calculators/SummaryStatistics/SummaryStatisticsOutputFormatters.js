@@ -1,4 +1,4 @@
-const { lowerCase, snakeCase } = require('lodash');
+const { snakeCase } = require('lodash');
 const { EAV } = require('../../enums/outputFormats');
 
 const basicOutputFormatters = require('../../utils/basicOutputFormatters');
@@ -9,10 +9,7 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: this.constructor.measure,
-    time_bin_size: this.timeBinSize,
-    metric: this.npmrdsMetric,
-    data_source: this.npmrdsDataSource
+    measure: this.constructor.measure
   };
 
   const formatted = [];
@@ -21,13 +18,11 @@ function eavFormatter(output) {
     const summaryStats = summaryStatsByTimePeriod[timePeriod];
 
     Object.keys(summaryStats).forEach(stat => {
-      const k = snakeCase(lowerCase(`${timePeriod}_${stat}`));
-
-      formatted.push(
-        Object.assign({}, baseFields, {
-          [k]: summaryStats[stat]
-        })
-      );
+      formatted.push({
+        ...baseFields,
+        attribute: snakeCase(`${timePeriod}_${stat}`),
+        value: summaryStats[stat]
+      });
     });
   });
 
