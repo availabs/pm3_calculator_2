@@ -12,12 +12,12 @@ function eavFormatter(output) {
     directionality,
     dirAadtByVehClass,
     avgVehicleOccupancyByVehClass,
-    xDelayHrsByTimePeriod,
-    totalXDelayHrs,
-    xDelayVehHrsByVehClassByTimePeriod,
-    totalXDelayVehHrsByVehClass,
-    xDelayPerHrsByVehClassByTimePeriod,
-    totalXDelayPerHrsByVehClass
+    xdelayHrsByTimePeriod,
+    xdelayHrs,
+    xdelayVehHrsByVehClassByTimePeriod,
+    xdelayVehHrsByVehClass,
+    xdelayPerHrsByVehClassByTimePeriod,
+    xdelayPerHrsByVehClass
   } = output;
 
   const baseFields = {
@@ -49,8 +49,8 @@ function eavFormatter(output) {
     },
     {
       ...baseFields,
-      attribute: snakeCase('totalXDelayHrs'),
-      value: totalXDelayHrs
+      attribute: snakeCase('xdelayHrs'),
+      value: xdelayHrs
     }
   ];
 
@@ -72,24 +72,24 @@ function eavFormatter(output) {
   );
 
   formatted.push(
-    ...Object.keys(xDelayHrsByTimePeriod).map(timePeriod => ({
+    ...Object.keys(xdelayHrsByTimePeriod).map(timePeriod => ({
       ...baseFields,
       attribute: snakeCase(`${timePeriod}_xdelay_hrs`),
-      value: xDelayHrsByTimePeriod[timePeriod]
+      value: xdelayHrsByTimePeriod[timePeriod]
     }))
   );
 
   formatted.push(
-    ...Object.keys(xDelayVehHrsByVehClassByTimePeriod).reduce(
+    ...Object.keys(xdelayVehHrsByVehClassByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const xDelayVehHrsByVehClass =
-          xDelayVehHrsByVehClassByTimePeriod[timePeriod];
+        const xdVehHrsByVehClass =
+          xdelayVehHrsByVehClassByTimePeriod[timePeriod];
 
-        Object.keys(xDelayVehHrsByVehClass).forEach(vehClass => {
+        Object.keys(xdVehHrsByVehClass).forEach(vehClass => {
           acc.push({
             ...baseFields,
             attribute: snakeCase(`${timePeriod}_${vehClass}_xdelay_vhrs`),
-            value: xDelayVehHrsByVehClass[vehClass]
+            value: xdVehHrsByVehClass[vehClass]
           });
         });
 
@@ -100,16 +100,16 @@ function eavFormatter(output) {
   );
 
   formatted.push(
-    ...Object.keys(xDelayPerHrsByVehClassByTimePeriod).reduce(
+    ...Object.keys(xdelayPerHrsByVehClassByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const xDelayPerHrsByVehClass =
-          xDelayPerHrsByVehClassByTimePeriod[timePeriod];
+        const xdPerHrsByVehClass =
+          xdelayPerHrsByVehClassByTimePeriod[timePeriod];
 
-        Object.keys(xDelayPerHrsByVehClass).forEach(vehClass => {
+        Object.keys(xdPerHrsByVehClass).forEach(vehClass => {
           acc.push({
             ...baseFields,
             attribute: snakeCase(`${timePeriod}_${vehClass}_xdelay_phrs`),
-            value: xDelayPerHrsByVehClass[vehClass]
+            value: xdPerHrsByVehClass[vehClass]
           });
         });
 
@@ -120,18 +120,18 @@ function eavFormatter(output) {
   );
 
   formatted.push(
-    ...Object.keys(totalXDelayVehHrsByVehClass).map(vehicleClass => ({
+    ...Object.keys(xdelayVehHrsByVehClass).map(vehicleClass => ({
       ...baseFields,
       attribute: snakeCase(`${vehicleClass}_xdelay_vhrs`),
-      value: totalXDelayVehHrsByVehClass[vehicleClass]
+      value: xdelayVehHrsByVehClass[vehicleClass]
     }))
   );
 
   formatted.push(
-    ...Object.keys(totalXDelayPerHrsByVehClass).map(vehicleClass => ({
+    ...Object.keys(xdelayPerHrsByVehClass).map(vehicleClass => ({
       ...baseFields,
       attribute: snakeCase(`${vehicleClass}_xdelay_phrs`),
-      value: totalXDelayPerHrsByVehClass[vehicleClass]
+      value: xdelayPerHrsByVehClass[vehicleClass]
     }))
   );
 

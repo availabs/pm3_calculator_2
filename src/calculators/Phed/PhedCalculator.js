@@ -1,6 +1,10 @@
 const assert = require('assert');
+// const { createWriteStream } = require('fs');
+// const { join } = require('path');
 
-const { mapValues, pick } = require('lodash');
+// const { sync: mkdirpSync } = require('mkdirp');
+
+const { mapValues } = require('lodash');
 
 const {
   getFractionOfDailyAadtByDowByTimeBin
@@ -37,22 +41,20 @@ const {
 
 const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
-const { AMP, PMP } = require('../../enums/pm3TimePeriods');
-
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
-  PM3_TIME_PERIOD_SPEC
+  PM3_ALT_PEAKS_TIME_PERIOD_SPEC
 } = timePeriodSpecNamesEnum;
 
-const defaultTimePeriodSpec = pick(
-  generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC],
-  [AMP, PMP]
-);
+const defaultTimePeriodSpec =
+  generalTimePeriodSpecs[PM3_ALT_PEAKS_TIME_PERIOD_SPEC];
 
 const outputFormatters = require('./PhedOutputFormatters');
 
 const PHED = 'PHED';
 const SEC_PER_MINUTE = 60;
+
+// const debugLogDir = join(__dirname, '../../../phed_debug_logs');
 
 const vehClass2DirAadtTypes = {
   [ALL]: ['directionalAadt'],
@@ -85,14 +87,14 @@ function getAvgVehicleOccupancyByVehClass(attrs) {
   }, {});
 }
 
-function getXDelayHrs(metricValue) {
+const getXDelayHrs = (tmcCalcCtx, metricValue) => {
   const {
     timeBinSize,
     isSpeedBased,
     roundTravelTimes,
     miles,
     thresholdTravelTimeSec
-  } = this;
+  } = tmcCalcCtx;
 
   const ttReal = isSpeedBased ? (miles / metricValue) * 3600 : metricValue;
 
@@ -103,44 +105,47 @@ function getXDelayHrs(metricValue) {
     ? precisionRound(tt - thresholdTravelTimeSec)
     : tt - thresholdTravelTimeSec;
 
-  const xDelaySec = Math.min(xds, SEC_PER_MINUTE * timeBinSize);
+  const xdelaySec = Math.min(xds, SEC_PER_MINUTE * timeBinSize);
 
-  const xdh = xDelaySec / 3600;
-  const xDelayHrs = roundTravelTimes ? precisionRound(xdh, 3) : xdh;
+  const xdh = xdelaySec / 3600;
+  const xdelayHrs = roundTravelTimes ? precisionRound(xdh, 3) : xdh;
 
-  return Math.max(xDelayHrs, 0);
-}
+  return Math.max(xdelayHrs, 0);
+};
 
-function getXDelayVehHrsByVehClass({ dow, timeBinNum, xDelayHrs }) {
+const getXDelayVehHrsByVehClass = (
+  tmcCalcCtx,
+  { dow, timeBinNum, xdelayHrs }
+) => {
   const {
     roundTravelTimes,
     dirAadtByVehClass,
     fractionOfDailyAadtByDowByTimeBin
-  } = this;
+  } = tmcCalcCtx;
   const fractionOfDailyAadt =
     fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
 
-  const xDelayVehHrsByVehClass = mapValues(dirAadtByVehClass, dirAadt => {
+  const xdelayVehHrsByVehClass = mapValues(dirAadtByVehClass, dirAadt => {
     const trafficVol = roundTravelTimes
       ? precisionRound(dirAadt * fractionOfDailyAadt, 1)
       : dirAadt * fractionOfDailyAadt;
 
-    return xDelayHrs * trafficVol;
+    return xdelayHrs * trafficVol;
   });
 
-  return xDelayVehHrsByVehClass;
-}
+  return xdelayVehHrsByVehClass;
+};
 
-function createAccumulatorVariables() {
-  const { vehicleClasses, timePeriods } = this;
+const createAccumulatorVariables = tmcCalcCtx => {
+  const { vehicleClasses, timePeriods } = tmcCalcCtx;
 
   return {
-    xDelayHrsByTimePeriod: timePeriods.reduce((acc, timePeriod) => {
+    xdelayHrsByTimePeriod: timePeriods.reduce((acc, timePeriod) => {
       acc[timePeriod] = 0;
       return acc;
     }, {}),
 
-    xDelayVehHrsByVehClassByTimePeriod: timePeriods.reduce(
+    xdelayVehHrsByVehClassByTimePeriod: timePeriods.reduce(
       (acc, timePeriod) => {
         acc[timePeriod] = {};
         vehicleClasses.forEach(vehClass => {
@@ -156,47 +161,52 @@ function createAccumulatorVariables() {
       return acc;
     }, {})
   };
-}
+};
 
-function getXDelayPerHrsByVehClassByTimePeriod(
-  xDelayVehHrsByVehClassByTimePeriod
-) {
+const getXDelayPerHrsByVehClassByTimePeriod = (
+  tmcCalcCtx,
+  xdelayVehHrsByVehClassByTimePeriod
+) => {
   const {
     timePeriods,
     roundTravelTimes,
     vehicleClasses,
     avgVehicleOccupancyByVehClass
-  } = this;
+  } = tmcCalcCtx;
+
   return timePeriods.reduce((acc, timePeriod) => {
-    const xDelayVehHrsByVehClass =
-      xDelayVehHrsByVehClassByTimePeriod[timePeriod];
+    const xdelayVehHrsByVehClass =
+      xdelayVehHrsByVehClassByTimePeriod[timePeriod];
 
     acc[timePeriod] = {};
 
     vehicleClasses.forEach(vehClass => {
-      const xDelayVehHrs = xDelayVehHrsByVehClass[vehClass];
+      const xdelayVehHrs = xdelayVehHrsByVehClass[vehClass];
       const avo = avgVehicleOccupancyByVehClass[vehClass];
 
       acc[timePeriod][vehClass] = roundTravelTimes
-        ? precisionRound(xDelayVehHrs * avo, 3)
-        : xDelayVehHrs * avo;
+        ? precisionRound(xdelayVehHrs * avo, 3)
+        : xdelayVehHrs * avo;
     });
 
     return acc;
   }, {});
-}
+};
 
-function getTotalXDelayPerHrsByVehClass(totalXDelayVehHrsByVehClass) {
-  const { vehicleClasses, avgVehicleOccupancyByVehClass } = this;
+const getTotalXDelayPerHrsByVehClass = (
+  tmcCalcCtx,
+  totalXDelayVehHrsByVehClass
+) => {
+  const { vehicleClasses, avgVehicleOccupancyByVehClass } = tmcCalcCtx;
   return vehicleClasses.reduce((acc, vehClass) => {
     const avo = avgVehicleOccupancyByVehClass[vehClass];
-    const xDelayVehHrs = totalXDelayVehHrsByVehClass[vehClass];
+    const xdelayVehHrs = totalXDelayVehHrsByVehClass[vehClass];
 
-    acc[vehClass] = avo * xDelayVehHrs;
+    acc[vehClass] = avo * xdelayVehHrs;
 
     return acc;
   }, {});
-}
+};
 
 class PhedCalculator {
   constructor(calcConfigParams) {
@@ -243,9 +253,17 @@ class PhedCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
+
+    // if (this.logIntermediaryCalculations) {
+    // mkdirpSync(debugLogDir);
+    // }
   }
 
   async calculateForTmc({ data, attrs }) {
+    data.sort(
+      (a, b) => a.date.localeCompare(b.date) || a.timeBinNum - b.timeBinNum
+    );
+
     const {
       npmrdsDataKeys: [npmrdsDataKey],
       timeBinSize,
@@ -254,9 +272,20 @@ class PhedCalculator {
       roundTravelTimes,
       isSpeedBased,
       timePeriods
+      // year
     } = this;
 
     const { tmc, avgSpeedlimit, functionalClass, miles } = attrs;
+
+    // const ws = this.logIntermediaryCalculations
+    // ? createWriteStream(join(debugLogDir, `${tmc}.${year}.csv`))
+    // : null;
+
+    // if (this.logIntermediaryCalculations) {
+    // ws.write(
+    // 'TMC,StartTimestamp,ExcessiveDelay_PK,VehVOL,VehDelay_PK_hr,Travel_Time_Sec\n'
+    // );
+    // }
 
     const dirAadtByVehClass = getDirAadtByVehClass.call(this, attrs);
 
@@ -308,10 +337,10 @@ class PhedCalculator {
 
     // The accumulator variables...
     const {
-      xDelayHrsByTimePeriod,
-      xDelayVehHrsByVehClassByTimePeriod,
+      xdelayHrsByTimePeriod,
+      xdelayVehHrsByVehClassByTimePeriod,
       totalXDelayVehHrsByVehClass
-    } = createAccumulatorVariables.call(tmcCalcCtx);
+    } = createAccumulatorVariables(tmcCalcCtx);
 
     let totalXDelayHrs = 0;
 
@@ -326,43 +355,61 @@ class PhedCalculator {
       if (timePeriod) {
         const { [npmrdsDataKey]: metricValue, dow, timeBinNum } = row;
 
-        const xDelayHrs = getXDelayHrs.call(tmcCalcCtx, metricValue);
+        const xdelayHrs = getXDelayHrs(tmcCalcCtx, metricValue);
 
-        xDelayHrsByTimePeriod[timePeriod] += xDelayHrs;
+        xdelayHrsByTimePeriod[timePeriod] += xdelayHrs;
 
-        totalXDelayHrs += xDelayHrs;
+        totalXDelayHrs += xdelayHrs;
 
-        const xDelayVehHrsByVehClass = getXDelayVehHrsByVehClass.call(
-          tmcCalcCtx,
-          {
-            dow,
-            timeBinNum,
-            xDelayHrs
-          }
-        );
+        const xdelayVehHrsByVehClass = getXDelayVehHrsByVehClass(tmcCalcCtx, {
+          dow,
+          timeBinNum,
+          xdelayHrs
+        });
 
         for (let j = 0; j < vehicleClasses.length; ++j) {
           const vehClass = vehicleClasses[j];
-          const xDelayVehHrs = xDelayVehHrsByVehClass[vehClass];
+          const xdelayVehHrs = xdelayVehHrsByVehClass[vehClass];
 
-          xDelayVehHrsByVehClassByTimePeriod[timePeriod][
+          xdelayVehHrsByVehClassByTimePeriod[timePeriod][
             vehClass
-          ] += xDelayVehHrs;
+          ] += xdelayVehHrs;
 
-          totalXDelayVehHrsByVehClass[vehClass] += xDelayVehHrs;
+          totalXDelayVehHrsByVehClass[vehClass] += xdelayVehHrs;
         }
+
+        // if (this.logIntermediaryCalculations) {
+        // const fractionOfDailyAadt =
+        // fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
+
+        // const aadt = dirAadtByVehClass.all;
+
+        // const vehVOL = precisionRound(fractionOfDailyAadt * aadt);
+
+        // const [y, m, d] = row.date.split('-');
+        // const HH = `0${row.hour}`.slice(-2);
+        // const MM = `0${(timeBinNum % 4) * 15}`.slice(-2);
+
+        // ws.write(
+        // `${tmc},${m}/${d}/${y} ${HH}:${MM},${xdelayHrs},${vehVOL},${
+        // xdelayVehHrsByVehClass.all
+        // },${precisionRound(metricValue)}\n`
+        // );
+        // }
       }
     }
 
-    const xDelayPerHrsByVehClassByTimePeriod = getXDelayPerHrsByVehClassByTimePeriod.call(
+    const xdelayPerHrsByVehClassByTimePeriod = getXDelayPerHrsByVehClassByTimePeriod(
       tmcCalcCtx,
-      xDelayVehHrsByVehClassByTimePeriod
+      xdelayVehHrsByVehClassByTimePeriod
     );
 
-    const totalXDelayPerHrsByVehClass = getTotalXDelayPerHrsByVehClass.call(
+    const totalXDelayPerHrsByVehClass = getTotalXDelayPerHrsByVehClass(
       tmcCalcCtx,
       totalXDelayVehHrsByVehClass
     );
+
+    // ws.end();
 
     return this.outputFormatter({
       tmc,
@@ -376,12 +423,12 @@ class PhedCalculator {
       functionalClass,
       dirAadtByVehClass,
       avgVehicleOccupancyByVehClass,
-      xDelayHrsByTimePeriod,
-      totalXDelayHrs,
-      xDelayVehHrsByVehClassByTimePeriod,
-      totalXDelayVehHrsByVehClass,
-      xDelayPerHrsByVehClassByTimePeriod,
-      totalXDelayPerHrsByVehClass
+      xdelayHrsByTimePeriod,
+      xdelayHrs: totalXDelayHrs,
+      xdelayVehHrsByVehClassByTimePeriod,
+      xdelayVehHrsByVehClass: totalXDelayVehHrsByVehClass,
+      xdelayPerHrsByVehClassByTimePeriod,
+      xdelayPerHrsByVehClass: totalXDelayPerHrsByVehClass
     });
   }
 }
@@ -396,6 +443,7 @@ PhedCalculator.configDefaults = {
   trafficDistributionTimeBinSize: 60,
   trafficDistributionProfilesVersion: CATTLAB,
   roundTravelTimes: true
+  // logIntermediaryCalculations: 0
 };
 PhedCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
@@ -405,7 +453,9 @@ PhedCalculator.configOptions = {
   trafficDistributionTimeBinSize: [5, 15, 60],
   trafficDistributionProfilesVersion: [AVAIL, CATTLAB],
   roundTravelTimes: [true, false]
+  // logIntermediaryCalculations: [0, 1]
 };
+
 PhedCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
 module.exports = PhedCalculator;
