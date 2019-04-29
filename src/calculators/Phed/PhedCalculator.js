@@ -122,6 +122,7 @@ const getXDelayVehHrsByVehClass = (
     dirAadtByVehClass,
     fractionOfDailyAadtByDowByTimeBin
   } = tmcCalcCtx;
+
   const fractionOfDailyAadt =
     fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
 
@@ -197,12 +198,19 @@ const getTotalXDelayPerHrsByVehClass = (
   tmcCalcCtx,
   totalXDelayVehHrsByVehClass
 ) => {
-  const { vehicleClasses, avgVehicleOccupancyByVehClass } = tmcCalcCtx;
+  const {
+    roundTravelTimes,
+    vehicleClasses,
+    avgVehicleOccupancyByVehClass
+  } = tmcCalcCtx;
+
   return vehicleClasses.reduce((acc, vehClass) => {
     const avo = avgVehicleOccupancyByVehClass[vehClass];
     const xdelayVehHrs = totalXDelayVehHrsByVehClass[vehClass];
 
-    acc[vehClass] = avo * xdelayVehHrs;
+    acc[vehClass] = roundTravelTimes
+      ? precisionRound(avo * xdelayVehHrs, 3)
+      : avo * xdelayVehHrs;
 
     return acc;
   }, {});
@@ -253,10 +261,6 @@ class PhedCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
-
-    // if (this.logIntermediaryCalculations) {
-    // mkdirpSync(debugLogDir);
-    // }
   }
 
   async calculateForTmc({ data, attrs }) {
@@ -276,16 +280,6 @@ class PhedCalculator {
     } = this;
 
     const { tmc, avgSpeedlimit, functionalClass, miles } = attrs;
-
-    // const ws = this.logIntermediaryCalculations
-    // ? createWriteStream(join(debugLogDir, `${tmc}.${year}.csv`))
-    // : null;
-
-    // if (this.logIntermediaryCalculations) {
-    // ws.write(
-    // 'TMC,StartTimestamp,ExcessiveDelay_PK,VehVOL,VehDelay_PK_hr,Travel_Time_Sec\n'
-    // );
-    // }
 
     const dirAadtByVehClass = getDirAadtByVehClass.call(this, attrs);
 
@@ -377,25 +371,6 @@ class PhedCalculator {
 
           totalXDelayVehHrsByVehClass[vehClass] += xdelayVehHrs;
         }
-
-        // if (this.logIntermediaryCalculations) {
-        // const fractionOfDailyAadt =
-        // fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
-
-        // const aadt = dirAadtByVehClass.all;
-
-        // const vehVOL = precisionRound(fractionOfDailyAadt * aadt);
-
-        // const [y, m, d] = row.date.split('-');
-        // const HH = `0${row.hour}`.slice(-2);
-        // const MM = `0${(timeBinNum % 4) * 15}`.slice(-2);
-
-        // ws.write(
-        // `${tmc},${m}/${d}/${y} ${HH}:${MM},${xdelayHrs},${vehVOL},${
-        // xdelayVehHrsByVehClass.all
-        // },${precisionRound(metricValue)}\n`
-        // );
-        // }
       }
     }
 
@@ -409,7 +384,31 @@ class PhedCalculator {
       totalXDelayVehHrsByVehClass
     );
 
-    // ws.end();
+    // NOTE: The final rule does not say to round the product of the
+    //       excessiveDelay and the traffic volume with in the summation,
+    //       nor their sum, before multiplying by the AVO.
+    //       Additionally, it does not state to round the AVO.
+    //       For these reasons, we save the rounding of xdelayVehHrsByVehClassByTimePeriod
+    //       until after we calculate xdelayPerHrsByVehClassByTimePeriod.
+
+    Object.keys(xdelayVehHrsByVehClassByTimePeriod).forEach(timePeriod => {
+      const xdelayVehHrsByVehClass =
+        xdelayVehHrsByVehClassByTimePeriod[timePeriod];
+
+      Object.keys(xdelayVehHrsByVehClass).forEach(vehClass => {
+        xdelayVehHrsByVehClass[vehClass] = precisionRound(
+          xdelayVehHrsByVehClass[vehClass],
+          3
+        );
+      });
+    });
+
+    Object.keys(totalXDelayVehHrsByVehClass).forEach(vehClass => {
+      totalXDelayVehHrsByVehClass[vehClass] = precisionRound(
+        totalXDelayVehHrsByVehClass[vehClass],
+        3
+      );
+    });
 
     return this.outputFormatter({
       tmc,
