@@ -72,11 +72,13 @@ const generalCliArgsSpec = {
 
   head: { type: 'number' },
   tail: { type: 'number' },
+
   states: { alias: 'state', type: 'array' },
   geolevel: { type: 'string' },
   geocode: { type: 'string' },
   geoname: { type: 'string' },
   tmcs: { alias: 'tmc', type: 'array' },
+
   config: { alias: 'f', config: true },
   measures: {
     alias: 'measure',
