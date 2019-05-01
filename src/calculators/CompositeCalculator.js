@@ -26,6 +26,7 @@ class CompositeCalculator {
     this.npmrdsDataKeys = uniq(
       flatten(this.calculators.map(calc => calc.npmrdsDataKeys)).filter(k => k)
     );
+
     this.requiredTmcMetadata = uniq(
       flatten(this.calculators.map(calc => calc.requiredTmcMetadata)).filter(
         a => a

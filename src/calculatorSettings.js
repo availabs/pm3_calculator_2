@@ -4,6 +4,10 @@ const { camelCase, lowerCase, upperCase, pick } = require('lodash');
 
 const { uniq } = require('./utils/SetUtils');
 
+const {
+  names: { LOTTR, TTTR, PHED }
+} = require('./calculators/MeasureMetadata');
+
 const npmrdsDataSources = require('./enums/npmrdsDataSources');
 const { ARITHMETIC, HARMONIC } = require('./enums/meanTypes');
 
@@ -56,6 +60,16 @@ const generalCliArgsSpec = {
     demand: true,
     type: 'number'
   },
+
+  outputCalculatorsRequiredMetadata: {
+    type: 'boolean',
+    default: true
+  },
+  outputHPMSRequiredTmcMetadata: {
+    type: 'boolean',
+    default: true
+  },
+
   head: { type: 'number' },
   tail: { type: 'number' },
   states: { alias: 'state', type: 'array' },
@@ -68,7 +82,7 @@ const generalCliArgsSpec = {
     alias: 'measure',
     type: 'array',
     choices: measureNames,
-    demand: true
+    default: [LOTTR, TTTR, PHED]
   },
   timeBinSize: { type: 'number', choices: [5, 15, 60], default: 15 },
   meanType: {
@@ -121,6 +135,7 @@ const { argv } = yargs
     'camel-case-expansion': false,
     'flatten-duplicate-arrays': false
   })
+  .wrap(yargs.terminalWidth() / 1.618)
   .option(cliArgsSpec);
 
 // remove all aliases and yargs specific fields
@@ -145,6 +160,7 @@ Object.keys(calculatorSettings)
 
     calculatorSettings.measureSpecificSettings =
       calculatorSettings.measureSpecificSettings || {};
+
     calculatorSettings.measureSpecificSettings[measure] =
       calculatorSettings.measureSpecificSettings[measure] || {};
 

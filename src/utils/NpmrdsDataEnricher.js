@@ -5,6 +5,10 @@ const {
 
 class NpmrdsDataEnricher {
   static enrichData({ year, timeBinSize, data }) {
+    if (!Array.isArray(data)) {
+      return;
+    }
+
     const timeBinNum2Hour = buildTimeBinNum2HourTable(timeBinSize);
     const date2Dow = buildDate2DowTableForYear(year);
 

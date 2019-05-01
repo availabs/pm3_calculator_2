@@ -1,7 +1,6 @@
 const { promisify } = require('util');
 const { writeFile } = require('fs');
 const { join } = require('path');
-const { lowerCase } = require('lodash');
 
 const writeFileAsync = promisify(writeFile);
 
@@ -19,14 +18,13 @@ class MetadataWriter {
     calculators,
     outputDirPath,
     outputTimestamp,
-    outputFileFormat,
-    calculatorInstanceOuputFileNames
+    calculatorInstanceOuputFileNames,
+    tmcMetadataFileName
   }) {
     this.timestamp = outputTimestamp;
-    this.metadataFilePath = join(
-      outputDirPath,
-      `metadata.${lowerCase(outputFileFormat)}`
-    );
+
+    // Output file format for calculator_metadata is always JSON.
+    this.filePath = join(outputDirPath, `calculator_metadata.json`);
 
     this.calculatorSettings = calculatorSettings;
 
@@ -35,6 +33,8 @@ class MetadataWriter {
         outputFileName: calculatorInstanceOuputFileNames[i]
       })
     );
+
+    this.tmcMetadataFileName = tmcMetadataFileName;
   }
 
   async write() {
@@ -51,7 +51,11 @@ class MetadataWriter {
       }
     };
 
-    return writeFileAsync(this.metadataFilePath, JSON.stringify(metadata));
+    if (this.tmcMetadataFileName) {
+      metadata.tmcMetadataFileName = this.tmcMetadataFileName;
+    }
+
+    return writeFileAsync(this.filePath, JSON.stringify(metadata));
   }
 
   static end() {

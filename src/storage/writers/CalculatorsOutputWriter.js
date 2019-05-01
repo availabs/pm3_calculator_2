@@ -15,11 +15,7 @@ const transformStreamCreators = {
 };
 
 class CalculatorsOutputFilesWriter {
-  constructor({
-    calculators,
-    outputDirPath,
-    outputFileFormat
-  }) {
+  constructor({ calculators, outputDirPath, outputFileFormat }) {
     this.calculators = calculators;
 
     this.calculatorInstanceOuputFileNames = this.calculators.map(calculator =>
@@ -36,7 +32,6 @@ class CalculatorsOutputFilesWriter {
         const stream = createTransformStream();
 
         stream.pipe(createWriteStream(join(outputDirPath, fileName)));
-        stream.setMaxListeners(Number.POSITIVE_INFINITY);
 
         return stream;
       }
@@ -48,16 +43,15 @@ class CalculatorsOutputFilesWriter {
       calculatorsOutput.map(async (output, i) => {
         const stream = this.calculatorInstanceOutputStreams[i];
 
-        const rows = Array.isArray(output) ? output : [output];
+        const rows = (Array.isArray(output) ? output : [output]).filter(r => r);
 
-        for (let j = 0; j < rows.length; ++j) {
-          // if (!stream.write(rows[j])) {
-          // await new Promise(resolve =>
-          // stream.once('drain', () => process.nextTick(resolve))
-          // );
-          // }
-          stream.write(rows[j]);
+        if (!rows.length) {
+          return;
         }
+
+        await Promise.all(
+          rows.map(row => new Promise(resolve => stream.write(row, resolve)))
+        );
       })
     );
   }

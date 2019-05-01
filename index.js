@@ -7,6 +7,8 @@ const pLimit = require('p-limit');
 
 const calculatorSettings = require('./src/calculatorSettings');
 
+const { union } = require('./src/utils/SetUtils');
+
 const OutputWriter = require('./src/storage/writers/OutputWriter');
 
 const { year, timeBinSize } = calculatorSettings;
@@ -39,7 +41,14 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       calculators: compositeCalculator.calculators
     });
 
-    const { npmrdsDataKeys, requiredTmcMetadata } = compositeCalculator;
+    const {
+      requiredTmcMetadata: outputWriterRequiredTmcMetadata
+    } = outputWriter;
+
+    const {
+      npmrdsDataKeys,
+      requiredTmcMetadata: calculatorsRequiredTmcMetadata
+    } = compositeCalculator;
 
     const tmcs = await getRequestedTmcs(calculatorSettings);
     const bar = new ProgressBar(
@@ -47,13 +56,16 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       { total: tmcs.length }
     );
 
-    const attrsSet = new Set(requiredTmcMetadata);
-    attrsSet.add('state');
+    const requiredTmcMetadata = union(
+      ['state'],
+      outputWriterRequiredTmcMetadata,
+      calculatorsRequiredTmcMetadata
+    );
 
     const tmcsAttrsArr = await getMetadataForTmcs({
       year,
       tmcs,
-      columns: [...attrsSet]
+      columns: requiredTmcMetadata
     });
 
     const tmcAttrsTable = tmcsAttrsArr.reduce((acc, d) => {
@@ -73,22 +85,27 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
 
             const { state } = attrs;
 
-            const data = await getBinnedYearNpmrdsDataForTmc({
-              year,
-              timeBinSize,
-              state,
-              tmc,
-              npmrdsDataKeys
-            });
+            const data =
+              Array.isArray(npmrdsDataKeys) && npmrdsDataKeys.length
+                ? await getBinnedYearNpmrdsDataForTmc({
+                    year,
+                    timeBinSize,
+                    state,
+                    tmc,
+                    npmrdsDataKeys
+                  })
+                : null;
 
             NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
 
-            const res = await compositeCalculator.calculateForTmc({
-              attrs,
-              data
-            });
+            const calculatorsOutput = await compositeCalculator.calculateForTmc(
+              {
+                attrs,
+                data
+              }
+            );
 
-            await outputWriter.writeCalculatorsOutput(res);
+            await outputWriter.writeTmcData({ attrs, calculatorsOutput });
 
             bar.tick();
           } catch (err) {
@@ -98,7 +115,7 @@ const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
       )
     );
 
-    await outputWriter.writeMetadata();
+    await outputWriter.writeCalculatorMetadata();
     await outputWriter.end();
     console.log(`Calculator output written to ${outputWriter.outputDirPath}`);
   } catch (err) {

@@ -10,8 +10,6 @@ function eavFormatter(output) {
     thresholdTravelTimeSec,
     congestionLevel,
     directionality,
-    dirAadtByVehClass,
-    avgVehicleOccupancyByVehClass,
     xdelayHrsByTimePeriod,
     xdelayHrs,
     xdelayVehHrsByVehClassByTimePeriod,
@@ -53,23 +51,6 @@ function eavFormatter(output) {
       value: xdelayHrs
     }
   ];
-
-  formatted.push(
-    ...Object.keys(dirAadtByVehClass).map(vehicleClass =>
-      Object.assign({}, baseFields, {
-        attribute: snakeCase(`${vehicleClass}_dir_aadt`),
-        value: dirAadtByVehClass[vehicleClass]
-      })
-    )
-  );
-
-  formatted.push(
-    ...Object.keys(avgVehicleOccupancyByVehClass).map(vehicleClass => ({
-      ...baseFields,
-      attribute: snakeCase(`${vehicleClass}_occ_fac`),
-      value: avgVehicleOccupancyByVehClass[vehicleClass]
-    }))
-  );
 
   formatted.push(
     ...Object.keys(xdelayHrsByTimePeriod).map(timePeriod => ({

@@ -1,13 +1,18 @@
 const CalculatorsOutputWriter = require('./CalculatorsOutputWriter');
-const MetadataWriter = require('./MetadataWriter');
+const CalculatorMetadataWriter = require('./CalculatorMetadataWriter');
+const TmcMetadataWriter = require('./TmcMetadataWriter');
+
 const mkOutputDir = require('./utils/mkOutputDir');
 
 async function initialize() {
   const { outputDirPath, outputTimestamp } = await mkOutputDir();
   this.outputDirPath = outputDirPath;
   this.outputTimestamp = outputTimestamp;
+
   this.calculatorsOutputWriter = new CalculatorsOutputWriter(this);
   this.calculatorInstanceOuputFileNames = this.calculatorsOutputWriter.calculatorInstanceOuputFileNames;
+
+  this.tmcMetadataWriter.setOutputDirPath(this.outputDirPath);
 }
 
 class OutputWriter {
@@ -17,21 +22,30 @@ class OutputWriter {
 
     this.outputFileFormat = calculatorSettings.outputFileFormat;
 
+    this.tmcMetadataWriter = new TmcMetadataWriter(this);
+    this.tmcMetadataFileName = this.tmcMetadataWriter.fileName;
+
+    this.requiredTmcMetadata = this.tmcMetadataWriter.requiredTmcMetadata;
+
     this.ready = initialize.call(this);
   }
 
-  async writeCalculatorsOutput(calculatorsOutput) {
+  async writeTmcData({ attrs, calculatorsOutput }) {
     await this.ready;
-    return this.calculatorsOutputWriter.write(calculatorsOutput);
+    await Promise.all([
+      this.tmcMetadataWriter.write(attrs),
+      this.calculatorsOutputWriter.write(calculatorsOutput)
+    ]);
   }
 
-  async writeMetadata() {
+  async writeCalculatorMetadata() {
     await this.ready;
-    return new MetadataWriter(this).write();
+    return new CalculatorMetadataWriter(this).write();
   }
 
-  end() {
-    this.calculatorsOutputWriter.end();
+  async end() {
+    await this.tmcMetadataWriter.end();
+    await this.calculatorsOutputWriter.end();
   }
 }
 

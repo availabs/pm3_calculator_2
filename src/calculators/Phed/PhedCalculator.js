@@ -390,7 +390,6 @@ class PhedCalculator {
     //       Additionally, it does not state to round the AVO.
     //       For these reasons, we save the rounding of xdelayVehHrsByVehClassByTimePeriod
     //       until after we calculate xdelayPerHrsByVehClassByTimePeriod.
-
     Object.keys(xdelayVehHrsByVehClassByTimePeriod).forEach(timePeriod => {
       const xdelayVehHrsByVehClass =
         xdelayVehHrsByVehClassByTimePeriod[timePeriod];
@@ -442,7 +441,6 @@ PhedCalculator.configDefaults = {
   trafficDistributionTimeBinSize: 60,
   trafficDistributionProfilesVersion: CATTLAB,
   roundTravelTimes: true
-  // logIntermediaryCalculations: 0
 };
 PhedCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
@@ -452,7 +450,6 @@ PhedCalculator.configOptions = {
   trafficDistributionTimeBinSize: [5, 15, 60],
   trafficDistributionProfilesVersion: [AVAIL, CATTLAB],
   roundTravelTimes: [true, false]
-  // logIntermediaryCalculations: [0, 1]
 };
 
 PhedCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;

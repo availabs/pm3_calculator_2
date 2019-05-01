@@ -4,9 +4,14 @@
 
 const { isAbsolute, join } = require('path');
 const { existsSync, readFileSync, createReadStream } = require('fs');
+
+const { cloneDeep, omit } = require('lodash');
 const split2 = require('split2');
 const through2 = require('through2');
 const copyFrom = require('pg-copy-streams').from;
+
+const { NDJSON } = require('./src/enums/outputFileFormats');
+const { EAV } = require('./src/enums/outputFormats');
 
 const DBService = require('./src/storage/services/DBService');
 
@@ -30,11 +35,14 @@ if (!existsSync(calculatorOutputDirPath)) {
   process.exit(1);
 }
 
-const calculatorMetadataPath = join(calculatorOutputDirPath, 'metadata.ndjson');
+const calculatorMetadataPath = join(
+  calculatorOutputDirPath,
+  'calculator_metadata.json'
+);
 
 if (!existsSync(calculatorMetadataPath)) {
   console.error(
-    `ERROR: ${calculatorOutputDirPath} does not contain a metadata.json file.`
+    `ERROR: ${calculatorOutputDirPath} does not contain a calculator_metadata.json file.`
   );
   process.exit(1);
 }
@@ -45,14 +53,34 @@ const calculatorMetadata = JSON.parse(
   })
 );
 
+if (calculatorMetadata.calculatorSettings.outputFileFormat !== NDJSON) {
+  console.error(
+    'ERROR: The loader requires the calculator was run with --outputFileFormat=NDJSON'
+  );
+  process.exit(1);
+}
+
+if (calculatorMetadata.calculatorSettings.outputFormat !== EAV) {
+  console.error(
+    'ERROR: The loader requires the calculator was run with --outputFormat=EAV'
+  );
+  process.exit(1);
+}
+
 const { calculators: pm3MeasureCalculatorsMetadata } = calculatorMetadata;
 
 const insertPM3CalculatorMetadata = async () => {
+  const metadata = cloneDeep(calculatorMetadata);
+  metadata.calculators.forEach(cMeta => {
+    /* eslint-disable-next-line no-param-reassign */
+    delete cMeta.outputFileName;
+  });
+
   const {
     rows: [{ id }]
   } = await DBService.query(
     'INSERT INTO public.pm3_calculator_metadata (metadata) VALUES ($1) RETURNING id',
-    [calculatorMetadata]
+    [metadata]
   );
 
   return id;
@@ -75,13 +103,13 @@ const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
       const metadata = pm3MeasureCalculatorsMetadata[i];
 
       const {
-        rows: [{ id: mid }]
+        rows: [{ id }]
       } = await client.query(
         'INSERT INTO public.pm3_measure_calculator_metadata (pm3calc_id, metadata) VALUES ($1, $2) RETURNING id',
-        [pm3calc_id, metadata]
+        [pm3calc_id, omit(metadata, 'outputFileName')]
       );
 
-      pm3meacalc_ids.push(mid);
+      pm3meacalc_ids.push(id);
     }
 
     await client.query('COMMIT');
@@ -92,6 +120,72 @@ const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
     throw err;
   } finally {
     await client.release();
+  }
+};
+
+const loadTmcMetadata = async (pm3calc_id, tmcMetadataFileName) => {
+  if (!tmcMetadataFileName) {
+    return;
+  }
+
+  const outputFilePath = join(calculatorOutputDir, tmcMetadataFileName);
+
+  if (existsSync(outputFilePath)) {
+    const client = await DBService.pool.connect();
+
+    const pseudoMetadata = {
+      measure: 'TMC_METADATA',
+      year: calculatorMetadata.calculatorSettings.year
+    };
+
+    try {
+      const {
+        rows: [{ id }]
+      } = await client.query(
+        'INSERT INTO public.pm3_measure_calculator_metadata (pm3calc_id, metadata) VALUES ($1, $2) RETURNING id',
+        [pm3calc_id, pseudoMetadata]
+      );
+
+      await new Promise(async (resolve, reject) => {
+        const dataStream = createReadStream(outputFilePath)
+          .on('error', reject)
+          .pipe(split2(JSON.parse)) // https://github.com/mcollina/split2#ndj---newline-delimited-json
+          .pipe(
+            through2.obj(function ndjsonTransformer(
+              { tmc, attribute, value },
+              _,
+              cb
+            ) {
+              const v = typeof value === 'string' ? `"""${value}"""` : value;
+
+              const row = `${id},"${tmc}","${attribute}",${v}`;
+              this.push(Buffer.from(`${row}\n`));
+              cb();
+            })
+          );
+
+        const copyStream = client.query(
+          copyFrom(
+            'COPY public.pm3_eav_append_only (pm3meacalc_id, tmc, attribute, value) FROM STDIN WITH CSV'
+          )
+        );
+
+        dataStream.on('error', reject);
+
+        copyStream.on('error', reject);
+        copyStream.on('end', resolve);
+
+        dataStream.pipe(copyStream);
+      });
+    } catch (err) {
+      throw err;
+    } finally {
+      await client.release();
+    }
+  } else {
+    throw new Error(
+      `ERROR: measure file ${outputFilePath} is missing from the outputDir`
+    );
   }
 };
 
@@ -154,9 +248,14 @@ const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
 (async () => {
   let pm3calc_id;
   let pm3meacalc_ids;
+
+  const { tmcMetadataFileName } = calculatorMetadata;
+
   try {
     pm3calc_id = await insertPM3CalculatorMetadata();
     pm3meacalc_ids = await insertPM3MeasureCalculatorsMetadata(pm3calc_id);
+
+    await loadTmcMetadata(pm3calc_id, tmcMetadataFileName);
     await loadCalculatorsEAVOutput(pm3meacalc_ids);
   } catch (err) {
     await deletePM3CalculatorMetadata(pm3calc_id);
