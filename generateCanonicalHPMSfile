@@ -1,0 +1,232 @@
+#!/usr/bin/env node
+
+/* eslint no-console: 0, no-await-in-loop: 0 */
+
+const yargs = require('yargs');
+
+const csv = require('fast-csv');
+const copyTo = require('pg-copy-streams').to;
+const { flatten, isNil } = require('lodash');
+const split2 = require('split2');
+const through2 = require('through2');
+const { precisionRound } = require('./src/utils/MathUtils');
+
+const DBService = require('./src/storage/services/DBService');
+
+// 20190425T183140
+// const timestampRE = /^\d{8}T\d{6}$/;
+
+const stateRE = /^[a-z]{2}$/i;
+
+const { argv } = yargs
+  .strict()
+  .parserConfiguration({
+    'camel-case-expansion': false,
+    'flatten-duplicate-arrays': false
+  })
+  .option({
+    state: {
+      type: 'string',
+      demand: true
+    },
+    year: {
+      type: 'number',
+      demand: true
+    },
+    calculatorTimestamp: {
+      type: 'string'
+    }
+  });
+
+const YEAR = argv.year;
+const STATE = argv.state.toLowerCase();
+
+const METRIC_SOURCE = 1;
+const COMMENTS = '';
+
+if (!argv.state.match(stateRE)) {
+  console.error(
+    'ERROR: Invalid state. States should be specified by the two letter abbreviation.'
+  );
+  process.exit(1);
+}
+
+const tmcMetadataColMappings = new Map([
+  ['State_Code', 'stateCode'],
+  ['F_System', 'fSystem'],
+  ['Urban_Code', 'uaCode'],
+  ['Facility_Type', 'faciltype'],
+  ['NHS', 'nhs'],
+  ['Segment_Length', 'miles'],
+  ['Directionality', 'direction'],
+  ['DIR_AADT', 'directionalAadt'],
+  ['OCC_FAC', 'avgVehicleOccupancy']
+]);
+
+const lottrColMappings = new Map([
+  ['LOTTR_AMP', 'amp'],
+  ['TT_AMP50PCT', 'amp_50_pct'],
+  ['TT_AMP80PCT', 'amp_80_pct'],
+  ['LOTTR_MIDD', 'midd'],
+  ['TT_MIDD50PCT', 'midd_50_pct'],
+  ['TT_MIDD80PCT', 'midd_80_pct'],
+  ['LOTTR_PMP', 'pmp'],
+  ['TT_PMP50PCT', 'pmp_50_pct'],
+  ['TT_PMP80PCT', 'pmp_80_pct'],
+  ['LOTTR_WE', 'we'],
+  ['TT_WE50PCT', 'we_50_pct'],
+  ['TT_WE80PCT', 'we_80_pct']
+]);
+
+const tttrColMappings = new Map([
+  ['TTTR_AMP', 'amp'],
+  ['TTT_AMP50PCT', 'amp_50_pct'],
+  ['TTT_AMP95PCT', 'amp_95_pct'],
+  ['TTTR_MIDD', 'midd'],
+  ['TTT_MIDD50PCT', 'midd_50_pct'],
+  ['TTT_MIDD95PCT', 'midd_95_pct'],
+  ['TTTR_PMP', 'pmp'],
+  ['TTT_PMP50PCT', 'pmp_50_pct'],
+  ['TTT_PMP95PCT', 'pmp_95_pct'],
+  ['TTTR_WE', 'we'],
+  ['TTT_WE50PCT', 'we_50_pct'],
+  ['TTT_WE95PCT', 'we_95_pct'],
+  ['TTTR_OVN', 'ovn'],
+  ['TTT_OVN50PCT', 'ovn_50_pct'],
+  ['TTT_OVN95PCT', 'ovn_95_pct']
+]);
+
+const phedColMappings = new Map([['PHED', 'all_xdelay_phrs']]);
+
+const values2PgArr = map => [...map.values()].map(v => `'${v}'`);
+
+// TODO: Filter on state.
+const sql = `
+  SELECT
+      json_build_object(
+        'tmc', tmc,
+        'data', json_object_agg(measure, data) 
+      )
+    FROM (
+      SELECT
+          tmc,
+          measure,
+          json_object_agg(attribute, value) AS data
+        FROM pm3_authorative_view
+        WHERE (
+          (year = ${YEAR})
+          AND
+          (is_canonical)
+          AND
+          (state = '${STATE}')
+          AND
+          (
+            (
+              (measure = 'TMC_METADATA')
+              AND
+              (attribute = ANY(ARRAY[${values2PgArr(tmcMetadataColMappings)}]))
+            )
+            OR
+            (
+              (measure = 'LOTTR')
+              AND
+              (attribute = ANY(ARRAY[${values2PgArr(lottrColMappings)}]))
+            )
+            OR
+            (
+              (measure = 'TTTR')
+              AND
+              (attribute = ANY(ARRAY[${values2PgArr(tttrColMappings)}]))
+            )
+            OR
+            (
+              (measure = 'PHED')
+              AND
+              (attribute = ANY(ARRAY[${values2PgArr(phedColMappings)}]))
+            )
+          )
+        )
+        GROUP BY tmc, measure
+    ) AS t
+    GROUP BY tmc
+`;
+
+const dumpData = async () => {
+  const client = await DBService.pool.connect();
+
+  try {
+    await new Promise(async (resolve, reject) => {
+      const stream = client.query(copyTo(`COPY (${sql}) TO STDOUT`));
+
+      stream
+        .pipe(split2(JSON.parse)) // https://github.com/mcollina/split2#ndj---newline-delimited-json
+        .pipe(
+          through2.obj(function ndjsonTransformer({ tmc, data }, _, cb) {
+            const row = {
+              Year_Record: YEAR,
+              Travel_Time_Code: tmc,
+              METRIC_SOURCE,
+              COMMENTS,
+              ...[...tmcMetadataColMappings.entries()].reduce((acc, [k, v]) => {
+                acc[k] =
+                  data.TMC_METADATA && !isNil(data.TMC_METADATA[v])
+                    ? data.TMC_METADATA[v]
+                    : '';
+
+                return acc;
+              }, {}),
+              ...[...lottrColMappings.entries()].reduce((acc, [k, v]) => {
+                acc[k] =
+                  data.LOTTR && !isNil(data.LOTTR[v]) ? data.LOTTR[v] : '';
+
+                return acc;
+              }, {}),
+              ...[...tttrColMappings.entries()].reduce((acc, [k, v]) => {
+                acc[k] = data.TTTR && !isNil(data.TTTR[v]) ? data.TTTR[v] : '';
+
+                return acc;
+              }, {}),
+              ...[...phedColMappings.entries()].reduce((acc, [k, v]) => {
+                acc[k] = data.PHED && !isNil(data.PHED[v]) ? data.PHED[v] : '';
+
+                return acc;
+              }, {})
+            };
+
+            row.Segment_Length = precisionRound(row.Segment_Length, 3);
+            row.OCC_FAC = precisionRound(row.OCC_FAC, 1);
+
+            this.push(row);
+
+            cb();
+          })
+        )
+        .pipe(
+          csv.createWriteStream({
+            headers: flatten([
+              'Year_Record',
+              'State_Code',
+              'Travel_Time_Code',
+              [...tmcMetadataColMappings.keys()].slice(1),
+              [...lottrColMappings.keys()],
+              [...tttrColMappings.keys()],
+              [...phedColMappings.keys()],
+              'METRIC_SOURCE',
+              'COMMENTS'
+            ])
+          })
+        )
+        .pipe(process.stdout);
+
+      stream.on('error', reject);
+      stream.on('end', resolve);
+    });
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await client.release();
+    DBService.end();
+  }
+};
+
+dumpData();

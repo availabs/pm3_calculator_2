@@ -2,18 +2,9 @@ const { promisify } = require('util');
 const { writeFile } = require('fs');
 const { join } = require('path');
 
-const { isEqual, isNil } = require('lodash');
-
-const { ARITHMETIC } = require('../../enums/meanTypes');
-const { EAV } = require('../../enums/outputFormats');
-const { NDJSON } = require('../../enums/outputFileFormats');
-
-const {
-  names: { LOTTR, TTTR, PHED },
-  configDefaults
-} = require('../../calculators/MeasureMetadata');
-
 const writeFileAsync = promisify(writeFile);
+
+const { getRequestedGeographies } = require('../../requestedGeographies');
 
 const {
   connectionInfo,
@@ -24,66 +15,28 @@ const GitRepoState = require('../../utils/GitRepoState');
 
 const getCalculatorInstanceConfig = require('../../utils/getCalculatorInstanceConfig');
 
-const buildMeasureDefaultRunChecker = calculators => measure => {
-  return calculators.some(calculator => {
-    const calcInstanceConfig = getCalculatorInstanceConfig(calculator);
-    return (
-      calcInstanceConfig.measure === measure &&
-      calcInstanceConfig.timeBinSize === 15 &&
-      calcInstanceConfig.meanType === ARITHMETIC &&
-      calcInstanceConfig.roundTravelTimes &&
-      Object.keys(configDefaults[measure]).every(k =>
-        isEqual(calcInstanceConfig[k], configDefaults[measure][k])
-      )
-    );
-  });
-};
+const getAuthorativeVersionCandidacyDisqualifications = require('../../utils/getAuthorativeVersionCandidacyDisqualifications');
 
-const isAuthorativeVersionCandidate = (calculatorSettings, calculators) => {
-  const {
-    head,
-    tail,
-    geolevel,
-    geocode,
-    geoname,
-    tmcs,
-    states,
-    outputHPMSRequiredTmcMetadata,
-    outputFormat,
-    outputFileFormat
-  } = calculatorSettings;
+const representsSingleCompleteState = async ({ calculatorSettings }) => {
+  const requestedGeographies = await getRequestedGeographies(
+    calculatorSettings
+  );
 
-  const defaultRunChecker = buildMeasureDefaultRunChecker(calculators);
+  if (
+    !Array.isArray(requestedGeographies) ||
+    requestedGeographies.length > 1 ||
+    requestedGeographies[0].geolevel !== 'STATE'
+  ) {
+    return null;
+  }
 
-  // Ensure tmcs are not a subset or superset of a state's tmcs.
-  let isCandidate = true;
+  const [
+    {
+      states: [state]
+    }
+  ] = requestedGeographies;
 
-  isCandidate =
-    isCandidate && outputFormat === EAV && outputFileFormat === NDJSON;
-
-  // Single, complete state
-  isCandidate = isCandidate && isNil(head) && isNil(tail) && isNil(tmcs);
-
-  isCandidate =
-    isCandidate &&
-    (isNil(geolevel) ||
-      (geolevel === 'STATE' &&
-        (!Array.isArray(geocode) || geocode.length === 1) &&
-        (!Array.isArray(geoname) || geoname.length === 1)));
-
-  isCandidate = isCandidate && (!Array.isArray(states) || states.length === 1);
-
-  // Includes the HPMS required tmc metadata
-  isCandidate = isCandidate && outputHPMSRequiredTmcMetadata;
-
-  // Includes the default (FinalRule specified) runs of each PM3 measure
-  isCandidate =
-    isCandidate &&
-    defaultRunChecker(LOTTR) &&
-    defaultRunChecker(TTTR) &&
-    defaultRunChecker(PHED);
-
-  return isCandidate;
+  return state;
 };
 
 class MetadataWriter {
@@ -102,24 +55,31 @@ class MetadataWriter {
 
     this.calculatorSettings = calculatorSettings;
 
-    this.calculatorsState = calculators.map((calculator, i) =>
+    this.calculators = calculators;
+    this.calculatorsState = this.calculators.map((calculator, i) =>
       Object.assign({}, getCalculatorInstanceConfig(calculator), {
         outputFileName: calculatorInstanceOuputFileNames[i]
       })
     );
 
     this.tmcMetadataFileName = tmcMetadataFileName;
-
-    this.authorativeVersionCandidate = isAuthorativeVersionCandidate(
-      calculatorSettings,
-      calculators
-    );
   }
 
   async write() {
+    const authorativeVersionCandidacyDisqualifications = await getAuthorativeVersionCandidacyDisqualifications(
+      this
+    );
+
+    const singleCompleteState =
+      !authorativeVersionCandidacyDisqualifications &&
+      (await representsSingleCompleteState(this));
+
+    this.authorativeVersionCandidate = !authorativeVersionCandidacyDisqualifications;
+
     const referencedDatabaseTables = await getReferencedDatabaseTables();
 
     const metadata = {
+      state: singleCompleteState,
       authorativeVersionCandidate: this.authorativeVersionCandidate,
       timestamp: this.timestamp,
       calculatorSettings: this.calculatorSettings,
@@ -133,6 +93,10 @@ class MetadataWriter {
 
     if (this.tmcMetadataFileName) {
       metadata.tmcMetadataFileName = this.tmcMetadataFileName;
+    }
+
+    if (authorativeVersionCandidacyDisqualifications) {
+      metadata.authorativeVersionCandidacyDisqualifications = authorativeVersionCandidacyDisqualifications;
     }
 
     return writeFileAsync(this.filePath, JSON.stringify(metadata));

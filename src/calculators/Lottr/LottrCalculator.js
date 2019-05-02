@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const { pick } = require('lodash');
+const { isEqual, pick } = require('lodash');
 const { quantileSorted } = require('simple-statistics');
 
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
@@ -42,8 +42,17 @@ const TWENTIETH_PCTL = 0.2;
 const FIFTIETH_PCTL = 0.5;
 const EIGHTIETH_PCTL = 0.8;
 
+function isCanonicalConfig(configDefaults) {
+  return (
+    this.timeBinSize === 15 &&
+    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+  );
+}
+
 class LottrCalculator {
   constructor(calcConfigParams) {
+    const { configDefaults } = LottrCalculator;
+
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -52,10 +61,10 @@ class LottrCalculator {
       this
     );
 
-    Object.keys(LottrCalculator.configDefaults).forEach(k => {
+    Object.keys(configDefaults).forEach(k => {
       this[k] =
         calcConfigParams[k] === undefined
-          ? LottrCalculator.configDefaults[k]
+          ? configDefaults[k]
           : calcConfigParams[k];
     });
 
@@ -69,6 +78,8 @@ class LottrCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
+
+    this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
 
   async calculateForTmc({ data, attrs }) {

@@ -1,5 +1,7 @@
 const assert = require('assert');
 
+const { isEqual } = require('lodash');
+
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
 const npmrdsDataSources = Object.keys(npmrdsDataSourcesEnum);
@@ -35,8 +37,17 @@ const outputFormatters = require('./SummaryStatisticsOutputFormatters');
 
 const SUMMARY_STATISTICS = 'SUMMARY_STATISTICS';
 
+function isCanonicalConfig(configDefaults) {
+  return (
+    this.timeBinSize === 15 &&
+    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+  );
+}
+
 class SummaryStatisticsCalculator {
   constructor(calcConfigParams) {
+    const { configDefaults } = SummaryStatisticsCalculator;
+
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -45,10 +56,10 @@ class SummaryStatisticsCalculator {
       this
     );
 
-    Object.keys(SummaryStatisticsCalculator.configDefaults).forEach(k => {
+    Object.keys(configDefaults).forEach(k => {
       this[k] =
         calcConfigParams[k] === undefined
-          ? SummaryStatisticsCalculator.configDefaults[k]
+          ? configDefaults[k]
           : calcConfigParams[k];
     });
 
@@ -60,6 +71,8 @@ class SummaryStatisticsCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+
+    this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
 
   async calculateForTmc({ data, attrs }) {

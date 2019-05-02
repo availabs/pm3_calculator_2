@@ -4,7 +4,7 @@ const assert = require('assert');
 
 // const { sync: mkdirpSync } = require('mkdirp');
 
-const { mapValues } = require('lodash');
+const { isEqual, mapValues } = require('lodash');
 
 const {
   getFractionOfDailyAadtByDowByTimeBin
@@ -216,8 +216,17 @@ const getTotalXDelayPerHrsByVehClass = (
   }, {});
 };
 
+function isCanonicalConfig(configDefaults) {
+  return (
+    this.timeBinSize === 15 &&
+    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+  );
+}
+
 class PhedCalculator {
   constructor(calcConfigParams) {
+    const { configDefaults } = PhedCalculator;
+
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -226,10 +235,10 @@ class PhedCalculator {
       this
     );
 
-    Object.keys(PhedCalculator.configDefaults).forEach(k => {
+    Object.keys(configDefaults).forEach(k => {
       this[k] =
         calcConfigParams[k] === undefined
-          ? PhedCalculator.configDefaults[k]
+          ? configDefaults[k]
           : calcConfigParams[k];
     });
 
@@ -261,6 +270,8 @@ class PhedCalculator {
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
+
+    this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
 
   async calculateForTmc({ data, attrs }) {

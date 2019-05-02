@@ -20,6 +20,8 @@
 */
 const assert = require('assert');
 
+const { isEqual } = require('lodash');
+
 const { quantileSorted } = require('simple-statistics');
 
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
@@ -57,8 +59,17 @@ const FIFTH_PCTL = 0.05;
 const FIFTIETH_PCTL = 0.5;
 const NINETYFIFTH_PCTL = 0.95;
 
+function isCanonicalConfig(configDefaults) {
+  return (
+    this.timeBinSize === 15 &&
+    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+  );
+}
+
 class TttrCalculator {
   constructor(calcConfigParams) {
+    const { configDefaults } = TttrCalculator;
+
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -67,10 +78,10 @@ class TttrCalculator {
       this
     );
 
-    Object.keys(TttrCalculator.configDefaults).forEach(k => {
+    Object.keys(configDefaults).forEach(k => {
       this[k] =
         calcConfigParams[k] === undefined
-          ? TttrCalculator.configDefaults[k]
+          ? configDefaults[k]
           : calcConfigParams[k];
     });
 
@@ -82,6 +93,8 @@ class TttrCalculator {
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+
+    this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
 
   async calculateForTmc({ data, attrs }) {

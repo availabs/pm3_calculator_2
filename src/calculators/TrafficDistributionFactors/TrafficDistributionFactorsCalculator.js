@@ -1,5 +1,7 @@
 const assert = require('assert');
 
+const { isEqual } = require('lodash');
+
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
@@ -37,9 +39,18 @@ const outputFormatters = require('./TrafficDistributionFactorsOutputFormatters')
 
 const TRAFFIC_DISTRIBUTION_FACTORS = 'TRAFFIC_DISTRIBUTION_FACTORS';
 
+function isCanonicalConfig(configDefaults) {
+  return (
+    this.timeBinSize === 15 &&
+    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+  );
+}
+
 // See [FHWA PM3 Recommended Procedures](../../../documentation/FHWA_PM3_RecommendedProcedures.pdf)
 class TrafficDistributionFactorsCalculator {
   constructor(calcConfigParams) {
+    const { configDefaults } = TrafficDistributionFactorsCalculator;
+
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
@@ -48,14 +59,12 @@ class TrafficDistributionFactorsCalculator {
       this
     );
 
-    Object.keys(TrafficDistributionFactorsCalculator.configDefaults).forEach(
-      k => {
-        this[k] =
-          calcConfigParams[k] === undefined
-            ? TrafficDistributionFactorsCalculator.configDefaults[k]
-            : calcConfigParams[k];
-      }
-    );
+    Object.keys(configDefaults).forEach(k => {
+      this[k] =
+        calcConfigParams[k] === undefined
+          ? configDefaults[k]
+          : calcConfigParams[k];
+    });
 
     this.speedBased = this.npmrdsMetric === SPEED;
 
@@ -73,6 +82,8 @@ class TrafficDistributionFactorsCalculator {
     if (!this.speedBased) {
       this.requiredTmcMetadata.push('miles');
     }
+
+    this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
 
   async calculateForTmc({ data, attrs }) {

@@ -135,7 +135,8 @@ const loadTmcMetadata = async (pm3calc_id, tmcMetadataFileName) => {
 
     const pseudoMetadata = {
       measure: 'TMC_METADATA',
-      year: calculatorMetadata.calculatorSettings.year
+      year: calculatorMetadata.calculatorSettings.year,
+      isCanonical: true
     };
 
     try {
