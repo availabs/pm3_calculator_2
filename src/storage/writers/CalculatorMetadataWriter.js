@@ -15,8 +15,6 @@ const GitRepoState = require('../../utils/GitRepoState');
 
 const getCalculatorInstanceConfig = require('../../utils/getCalculatorInstanceConfig');
 
-const getAuthorativeVersionCandidacyDisqualifications = require('../../utils/getAuthorativeVersionCandidacyDisqualifications');
-
 const representsSingleCompleteState = async ({ calculatorSettings }) => {
   const requestedGeographies = await getRequestedGeographies(
     calculatorSettings
@@ -46,7 +44,8 @@ class MetadataWriter {
     outputDirPath,
     outputTimestamp,
     calculatorInstanceOuputFileNames,
-    tmcMetadataFileName
+    tmcMetadataFileName,
+    authorativeVersionCandidacyDisqualifications
   }) {
     this.timestamp = outputTimestamp;
 
@@ -63,18 +62,17 @@ class MetadataWriter {
     );
 
     this.tmcMetadataFileName = tmcMetadataFileName;
+
+    this.authorativeVersionCandidacyDisqualifications = authorativeVersionCandidacyDisqualifications;
   }
 
   async write() {
-    const authorativeVersionCandidacyDisqualifications = await getAuthorativeVersionCandidacyDisqualifications(
-      this
-    );
-
     const singleCompleteState =
-      !authorativeVersionCandidacyDisqualifications &&
+      !this.authorativeVersionCandidacyDisqualifications &&
       (await representsSingleCompleteState(this));
 
-    this.authorativeVersionCandidate = !authorativeVersionCandidacyDisqualifications;
+    this.authorativeVersionCandidate = !this
+      .authorativeVersionCandidacyDisqualifications;
 
     const referencedDatabaseTables = await getReferencedDatabaseTables();
 
@@ -95,8 +93,8 @@ class MetadataWriter {
       metadata.tmcMetadataFileName = this.tmcMetadataFileName;
     }
 
-    if (authorativeVersionCandidacyDisqualifications) {
-      metadata.authorativeVersionCandidacyDisqualifications = authorativeVersionCandidacyDisqualifications;
+    if (this.authorativeVersionCandidacyDisqualifications) {
+      metadata.authorativeVersionCandidacyDisqualifications = this.authorativeVersionCandidacyDisqualifications;
     }
 
     return writeFileAsync(this.filePath, JSON.stringify(metadata));
