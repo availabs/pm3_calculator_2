@@ -4,21 +4,21 @@ const CalculatorsOutputWriter = require('./CalculatorsOutputWriter');
 const CalculatorMetadataWriter = require('./CalculatorMetadataWriter');
 const TmcMetadataWriter = require('./TmcMetadataWriter');
 
-const getAuthorativeVersionCandidacyDisqualifications = require('../../utils/getAuthorativeVersionCandidacyDisqualifications');
+const getAuthoritativeVersionCandidacyDisqualifications = require('../../utils/getAuthoritativeVersionCandidacyDisqualifications');
 
 const mkOutputDir = require('./utils/mkOutputDir');
 
-const logAuthorativeVersionCandicacyMessage = disqualifications => {
+const logAuthoritativeVersionCandicacyMessage = disqualifications => {
   if (disqualifications) {
     console.error(
-      'WARNING: This calculator run is ineligible to become an authorative version for the following reasons:'
+      'WARNING: This calculator run is ineligible to become an authoritative version for the following reasons:'
     );
     disqualifications.forEach((disqualification, i) => {
       console.error(`\t${i + 1}. ${disqualification}`);
     });
   } else {
     console.error(
-      'This calculator is eligible to become an authorative version.'
+      'This calculator is eligible to become an authoritative version.'
     );
   }
 };
@@ -33,12 +33,12 @@ async function initialize() {
 
   this.tmcMetadataWriter.setOutputDirPath(this.outputDirPath);
 
-  this.authorativeVersionCandidacyDisqualifications = await getAuthorativeVersionCandidacyDisqualifications(
+  this.authoritativeVersionCandidacyDisqualifications = await getAuthoritativeVersionCandidacyDisqualifications(
     this
   );
 
-  logAuthorativeVersionCandicacyMessage(
-    this.authorativeVersionCandidacyDisqualifications
+  logAuthoritativeVersionCandicacyMessage(
+    this.authoritativeVersionCandidacyDisqualifications
   );
 }
 

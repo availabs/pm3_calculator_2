@@ -53,7 +53,7 @@ const notSingleCompleteState = async calculatorSettings => {
   return !Array.isArray(requestedGeographies) ||
     requestedGeographies.length > 1 ||
     requestedGeographies[0].geolevel !== 'STATE'
-    ? 'Authorative version candidates must be run for a single, complete state.'
+    ? 'Authoritative version candidates must be run for a single, complete state.'
     : null;
 };
 
@@ -83,7 +83,7 @@ const hasUncommittedCodeChanges = () =>
     ? 'The codebase has uncommited changes in the git repo.'
     : null;
 
-const getAuthorativeVersionCandidacyDisqualifications = async ({
+const getAuthoritativeVersionCandidacyDisqualifications = async ({
   calculatorSettings,
   calculators
 }) => {
@@ -101,4 +101,4 @@ const getAuthorativeVersionCandidacyDisqualifications = async ({
   return disqualifications.length ? disqualifications : null;
 };
 
-module.exports = getAuthorativeVersionCandidacyDisqualifications;
+module.exports = getAuthoritativeVersionCandidacyDisqualifications;

@@ -45,7 +45,7 @@ class MetadataWriter {
     outputTimestamp,
     calculatorInstanceOuputFileNames,
     tmcMetadataFileName,
-    authorativeVersionCandidacyDisqualifications
+    authoritativeVersionCandidacyDisqualifications
   }) {
     this.timestamp = outputTimestamp;
 
@@ -63,22 +63,22 @@ class MetadataWriter {
 
     this.tmcMetadataFileName = tmcMetadataFileName;
 
-    this.authorativeVersionCandidacyDisqualifications = authorativeVersionCandidacyDisqualifications;
+    this.authoritativeVersionCandidacyDisqualifications = authoritativeVersionCandidacyDisqualifications;
   }
 
   async write() {
     const singleCompleteState =
-      !this.authorativeVersionCandidacyDisqualifications &&
+      !this.authoritativeVersionCandidacyDisqualifications &&
       (await representsSingleCompleteState(this));
 
-    this.authorativeVersionCandidate = !this
-      .authorativeVersionCandidacyDisqualifications;
+    this.authoritativeVersionCandidate = !this
+      .authoritativeVersionCandidacyDisqualifications;
 
     const referencedDatabaseTables = await getReferencedDatabaseTables();
 
     const metadata = {
       state: singleCompleteState,
-      authorativeVersionCandidate: this.authorativeVersionCandidate,
+      authoritativeVersionCandidate: this.authoritativeVersionCandidate,
       timestamp: this.timestamp,
       calculatorSettings: this.calculatorSettings,
       calculators: this.calculatorsState,
@@ -93,8 +93,8 @@ class MetadataWriter {
       metadata.tmcMetadataFileName = this.tmcMetadataFileName;
     }
 
-    if (this.authorativeVersionCandidacyDisqualifications) {
-      metadata.authorativeVersionCandidacyDisqualifications = this.authorativeVersionCandidacyDisqualifications;
+    if (this.authoritativeVersionCandidacyDisqualifications) {
+      metadata.authoritativeVersionCandidacyDisqualifications = this.authoritativeVersionCandidacyDisqualifications;
     }
 
     return writeFileAsync(this.filePath, JSON.stringify(metadata));

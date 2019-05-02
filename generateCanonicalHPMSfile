@@ -112,7 +112,7 @@ const sql = `
           tmc,
           measure,
           json_object_agg(attribute, value) AS data
-        FROM pm3_authorative_view
+        FROM pm3_authoritative_view
         WHERE (
           (year = ${YEAR})
           AND
