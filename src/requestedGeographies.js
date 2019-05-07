@@ -4,7 +4,7 @@ const { equal } = require('lodash');
 const Geography = require('./models/Geography');
 
 const getRequestedGeographies = memoizeOne(
-  async ({ states, geolevel, geocode, geoname }) => {
+  async ({ year, states, geolevel, geocode, geoname }) => {
     const statesArr = [...new Set(states)].filter(s => s);
 
     const geographies = [];
@@ -15,6 +15,7 @@ const getRequestedGeographies = memoizeOne(
 
         if (geolevel) {
           const geography = new Geography({
+            year,
             states: state,
             geolevel,
             geocode,
@@ -23,6 +24,7 @@ const getRequestedGeographies = memoizeOne(
           geographies.push(geography);
         } else {
           const geography = new Geography({
+            year,
             states: state,
             geolevel: 'STATE'
           });
@@ -31,6 +33,7 @@ const getRequestedGeographies = memoizeOne(
       }
     } else if (geolevel) {
       const geography = new Geography({
+        year,
         geolevel,
         geocode,
         geoname

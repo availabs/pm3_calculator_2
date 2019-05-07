@@ -51,12 +51,14 @@ const handleStateCodesArg = state_codes => {
 
 class GeographyLevel {
   constructor({
+    year = null,
     geolevel = null,
     geocode = null,
     geoname = null,
     states = null,
     state_codes = null
   }) {
+    this.year = year;
     this.geolevel = geolevel;
     this.geocode = geocode;
     this.geoname = geoname;
