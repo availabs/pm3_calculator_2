@@ -1,0 +1,10 @@
+# NOTE: HPMS-PM3 files renamed for file path stability
+
+GoldenStandards:
+  Calculator:
+    Repo: pm3_calculator
+    Version: v8
+    GitHash: 382642b595061028a7a82a71de501bd5a26e08e6
+  Databases:
+    2017: ares
+    2018: hermes

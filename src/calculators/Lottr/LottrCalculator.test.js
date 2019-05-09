@@ -27,6 +27,8 @@ const CLOSENESS_PRECISION = 9;
 
 const timeBinSizes = [5, 15, 60];
 
+jest.setTimeout(120000);
+
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
   test(`LOTTR excess delay hours`, async done => {
     const attrs = {

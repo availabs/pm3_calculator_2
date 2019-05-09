@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+const { fork } = require('child_process');
+const { join } = require('path');
+
+const yargs = require('yargs');
+
+const { argv } = yargs
+  .strict()
+  .parserConfiguration({
+    'camel-case-expansion': false,
+    'flatten-duplicate-arrays': false
+  })
+  .option({
+    year: {
+      type: 'number',
+      demand: true
+    }
+  });
+
+const NPMRDS_YEAR = argv.year;
+
+const jestPath = join(__dirname, 'node_modules', '.bin', 'jest');
+
+fork(
+  jestPath,
+  [
+    '--testMatch=**/*.goldenstandard.js',
+    '--setupFilesAfterEnv=jest-expect-message'
+  ],
+  { env: { FORCE_COLOR: true, NPMRDS_YEAR } }
+);

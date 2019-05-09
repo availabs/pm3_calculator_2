@@ -33,6 +33,8 @@ const DAYS_PER_WEEK = 7;
 
 const timeBinSizes = [5, 15, 60];
 
+jest.setTimeout(120000);
+
 beforeEach(() => {
   jest.resetModules();
 });
