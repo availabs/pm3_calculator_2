@@ -130,6 +130,15 @@ const dumpData = async () => {
                     ? data.TMC_METADATA[v]
                     : '';
 
+                if (k === 'Directionality') {
+                  acc[k] = {
+                    N: 1,
+                    S: 2,
+                    E: 3,
+                    W: 4
+                  }[data.TMC_METADATA] || 5
+                }
+
                 return acc;
               }, {}),
               ...[...lottrColMappings.entries()].reduce((acc, [k, v]) => {
