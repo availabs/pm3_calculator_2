@@ -125,10 +125,6 @@ const dumpData = async () => {
               METRIC_SOURCE,
               COMMENTS,
               ...[...tmcMetadataColMappings.entries()].reduce((acc, [k, v]) => {
-                acc[k] =
-                  data.TMC_METADATA && !isNil(data.TMC_METADATA[v])
-                    ? data.TMC_METADATA[v]
-                    : '';
 
                 if (k === 'Directionality') {
                   acc[k] = {
@@ -136,7 +132,12 @@ const dumpData = async () => {
                     S: 2,
                     E: 3,
                     W: 4
-                  }[data.TMC_METADATA] || 5
+                  }[data.TMC_METADATA[v]] || 5
+                } else {
+                  acc[k] =
+                    data.TMC_METADATA && !isNil(data.TMC_METADATA[v])
+                      ? data.TMC_METADATA[v]
+                      : '';
                 }
 
                 return acc;
