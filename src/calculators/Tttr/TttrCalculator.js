@@ -20,19 +20,27 @@
 */
 const assert = require('assert');
 
-const { isEqual } = require('lodash');
+const Big = require('big.js');
+
+const { isEqual, isNil } = require('lodash');
 
 const { quantileSorted } = require('simple-statistics');
 
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
 const npmrdsDataSources = Object.keys(npmrdsDataSourcesEnum);
-const { TRUCK } = npmrdsDataSourcesEnum;
+const { ALL, TRUCK } = npmrdsDataSourcesEnum;
 
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
-const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
+const {
+  numbersComparator,
+  precisionRound,
+  toInteger
+} = require('../../utils/MathUtils');
+
+const { uniq } = require('../../utils/SetUtils');
 
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
@@ -92,7 +100,18 @@ class TttrCalculator {
 
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
-    this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+    this.primaryNpmrdsDataKey = getNpmrdsDataKey(this);
+
+    this.secondaryNpmrdsDataKey = getNpmrdsDataKey({
+      meanType: this.meanType,
+      npmrdsMetric: this.npmrdsMetric,
+      npmrdsDataSource: ALL
+    });
+
+    this.npmrdsDataKeys = uniq([
+      this.primaryNpmrdsDataKey,
+      this.secondaryNpmrdsDataKey
+    ]);
 
     this.isCanonical = isCanonicalConfig.call(this, configDefaults);
   }
@@ -100,13 +119,18 @@ class TttrCalculator {
   async calculateForTmc({ data, attrs }) {
     const { tmc } = attrs;
     const {
-      npmrdsDataKeys: [npmrdsDataKey]
+      roundTravelTimes,
+      isSpeedBased,
+      primaryNpmrdsDataKey,
+      secondaryNpmrdsDataKey
     } = this;
 
     const metricValuesByTimePeriod = data.reduce((acc, row) => {
       assert.strictEqual(row.tmc, attrs.tmc);
 
-      const { [npmrdsDataKey]: metricValue } = row;
+      const metricValue = isNil(row[primaryNpmrdsDataKey])
+        ? row[secondaryNpmrdsDataKey]
+        : row[primaryNpmrdsDataKey];
 
       const timePeriod = this.timePeriodIdentifier(row);
 
@@ -125,23 +149,21 @@ class TttrCalculator {
     const fiftiethPctlTravelTimeByTimePeriod = this.isSpeedBased
       ? null
       : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             FIFTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {});
 
     const fiftiethPctlSpeedByTimePeriod = this.isSpeedBased
       ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             FIFTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {})
       : null;
@@ -149,23 +171,21 @@ class TttrCalculator {
     const ninetyfifthPctlTravelTimeByTimePeriod = this.isSpeedBased
       ? null
       : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             NINETYFIFTH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {});
 
     const fifthPctlSpeedByTimePeriod = this.isSpeedBased
       ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             FIFTH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {})
       : null;
@@ -173,24 +193,53 @@ class TttrCalculator {
     const tttrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
       (acc, timePeriod) => {
         const tttr = this.isSpeedBased
-          ? fiftiethPctlSpeedByTimePeriod[timePeriod] /
-            fifthPctlSpeedByTimePeriod[timePeriod]
-          : ninetyfifthPctlTravelTimeByTimePeriod[timePeriod] /
-            fiftiethPctlTravelTimeByTimePeriod[timePeriod];
+          ? Big(fiftiethPctlSpeedByTimePeriod[timePeriod]).div(
+              Big(fifthPctlSpeedByTimePeriod[timePeriod])
+            )
+          : Big(ninetyfifthPctlTravelTimeByTimePeriod[timePeriod]).div(
+              Big(fiftiethPctlTravelTimeByTimePeriod[timePeriod])
+            );
 
-        acc[timePeriod] = this.roundTravelTimes
-          ? precisionRound(tttr, 2)
-          : tttr;
+        acc[timePeriod] = this.roundTravelTimes ? +tttr.toFixed(2) : +tttr;
 
         return acc;
       },
       {}
     );
 
+    // ==========  NOTE: OBJECT MUTATIONS ==========
+    if (roundTravelTimes) {
+      if (isSpeedBased) {
+        Object.keys(fifthPctlSpeedByTimePeriod).forEach(timePeriod => {
+          fifthPctlSpeedByTimePeriod[timePeriod] = toInteger(
+            fifthPctlSpeedByTimePeriod[timePeriod]
+          );
+        });
+        Object.keys(fiftiethPctlSpeedByTimePeriod).forEach(timePeriod => {
+          fiftiethPctlSpeedByTimePeriod[timePeriod] = toInteger(
+            fiftiethPctlSpeedByTimePeriod[timePeriod]
+          );
+        });
+      } else {
+        Object.keys(fiftiethPctlTravelTimeByTimePeriod).forEach(timePeriod => {
+          fiftiethPctlTravelTimeByTimePeriod[timePeriod] = toInteger(
+            fiftiethPctlTravelTimeByTimePeriod[timePeriod]
+          );
+        });
+        Object.keys(ninetyfifthPctlTravelTimeByTimePeriod).forEach(
+          timePeriod => {
+            ninetyfifthPctlTravelTimeByTimePeriod[timePeriod] = toInteger(
+              ninetyfifthPctlTravelTimeByTimePeriod[timePeriod]
+            );
+          }
+        );
+      }
+    }
+
     const result = Object.assign(
       {
         tmc,
-        npmrdsDataKey,
+        npmrdsDataKey: primaryNpmrdsDataKey,
         tttrByTimePeriod
       },
       this.isSpeedBased

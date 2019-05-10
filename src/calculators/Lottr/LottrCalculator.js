@@ -7,7 +7,11 @@ const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
 
-const { numbersComparator, precisionRound } = require('../../utils/MathUtils');
+const {
+  numbersComparator,
+  precisionRound,
+  toInteger
+} = require('../../utils/MathUtils');
 
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
@@ -85,6 +89,8 @@ class LottrCalculator {
   async calculateForTmc({ data, attrs }) {
     const { tmc } = attrs;
     const {
+      isSpeedBased,
+      roundTravelTimes,
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
 
@@ -107,70 +113,97 @@ class LottrCalculator {
       metricValues.sort(numbersComparator)
     );
 
-    const fiftiethPctlTravelTimeByTimePeriod = this.isSpeedBased
+    // NOTE: There is an apparent discrepancy between the FinalRule and HPMS-PM3
+    //       instructions for calculating LOTTR. The FinalRule seems to require
+    //       rounding the travel times prior to taking the 80th/50th ratio.
+    //       The HPMS-PM3 instructions clearly state to take the ratio before rounding.
+    //       Here, we follow the HPMS-PM3 method, and round the values afterward.
+
+    const fiftiethPctlTravelTimeByTimePeriod = isSpeedBased
       ? null
       : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             FIFTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {});
 
-    const fiftiethPctlSpeedByTimePeriod = this.isSpeedBased
+    const fiftiethPctlSpeedByTimePeriod = isSpeedBased
       ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             FIFTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {})
       : null;
 
-    const eightiethPctlTravelTimeByTimePeriod = this.isSpeedBased
+    const eightiethPctlTravelTimeByTimePeriod = isSpeedBased
       ? null
       : Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             EIGHTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {});
 
-    const twentiethPctlSpeedByTimePeriod = this.isSpeedBased
+    const twentiethPctlSpeedByTimePeriod = isSpeedBased
       ? Object.keys(metricValuesByTimePeriod).reduce((acc, timePeriod) => {
-          const v = quantileSorted(
+          acc[timePeriod] = quantileSorted(
             metricValuesByTimePeriod[timePeriod],
             TWENTIETH_PCTL
           );
 
-          acc[timePeriod] = this.roundTravelTimes ? precisionRound(v) : v;
           return acc;
         }, {})
       : null;
 
     const lottrByTimePeriod = Object.keys(metricValuesByTimePeriod).reduce(
       (acc, timePeriod) => {
-        const lottr = this.isSpeedBased
+        const lottr = isSpeedBased
           ? fiftiethPctlSpeedByTimePeriod[timePeriod] /
             twentiethPctlSpeedByTimePeriod[timePeriod]
           : eightiethPctlTravelTimeByTimePeriod[timePeriod] /
             fiftiethPctlTravelTimeByTimePeriod[timePeriod];
 
-        acc[timePeriod] = this.roundTravelTimes
-          ? precisionRound(lottr, 2)
-          : lottr;
+        acc[timePeriod] = roundTravelTimes ? precisionRound(lottr, 2) : lottr;
 
         return acc;
       },
       {}
     );
+
+    // ==========  NOTE: OBJECT MUTATIONS ==========
+    if (roundTravelTimes) {
+      if (isSpeedBased) {
+        Object.keys(twentiethPctlSpeedByTimePeriod).forEach(timePeriod => {
+          twentiethPctlSpeedByTimePeriod[timePeriod] = toInteger(
+            twentiethPctlSpeedByTimePeriod[timePeriod]
+          );
+        });
+        Object.keys(fiftiethPctlSpeedByTimePeriod).forEach(timePeriod => {
+          fiftiethPctlSpeedByTimePeriod[timePeriod] = toInteger(
+            fiftiethPctlSpeedByTimePeriod[timePeriod]
+          );
+        });
+      } else {
+        Object.keys(fiftiethPctlTravelTimeByTimePeriod).forEach(timePeriod => {
+          fiftiethPctlTravelTimeByTimePeriod[timePeriod] = toInteger(
+            fiftiethPctlTravelTimeByTimePeriod[timePeriod]
+          );
+        });
+        Object.keys(eightiethPctlTravelTimeByTimePeriod).forEach(timePeriod => {
+          eightiethPctlTravelTimeByTimePeriod[timePeriod] = toInteger(
+            eightiethPctlTravelTimeByTimePeriod[timePeriod]
+          );
+        });
+      }
+    }
 
     const result = Object.assign(
       {
@@ -178,7 +211,7 @@ class LottrCalculator {
         npmrdsDataKey,
         lottrByTimePeriod
       },
-      this.isSpeedBased
+      isSpeedBased
         ? { fiftiethPctlSpeedByTimePeriod, twentiethPctlSpeedByTimePeriod }
         : {
             fiftiethPctlTravelTimeByTimePeriod,

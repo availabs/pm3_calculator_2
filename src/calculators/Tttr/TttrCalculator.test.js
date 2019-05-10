@@ -1,7 +1,7 @@
 /* eslint no-param-reassign: 0 */
 
 const assert = require('assert');
-const { shuffle } = require('lodash');
+const { get, shuffle } = require('lodash');
 const { query, end } = require('../../storage/services/DBService');
 
 const { getMetadataForTmcs } = require('../../storage/daos/TmcMetadataDao');
@@ -18,7 +18,6 @@ const { AMP, MIDD, PMP, WE, OVN } = require('../../enums/pm3TimePeriods');
 
 const TttrCalculator = require('./TttrCalculator');
 
-const TMC = '104+04107';
 const YEAR = 2017;
 const TWO_AM_MINS = 120;
 const THREE_AM_MINS = 180;
@@ -30,7 +29,7 @@ const timeBinSizes = [5, 15, 60];
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
   test(`TTTR excess delay hours`, async done => {
     const attrs = {
-      tmc: 'foobar',
+      tmc: '000000000',
       miles: 2,
       avgSpeedlimit: 50,
       functionalClass: FREEWAY,
@@ -85,7 +84,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
         const curHour = curTime.getHours();
 
         mockNpmrdsData.push({
-          tmc: 'foobar',
+          tmc: '000000000',
           date,
           timeBinNum,
           dow: curDow,
@@ -196,8 +195,17 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
   test(`TTTR excess delay hours`, async done => {
-    // FIXME: should percentile_cont, but the values don't match
-    //        Hack to use percentile_disc
+    const randomTmcSql = `
+      SELECT
+          tmc
+        FROM ny.tmc_metadata_${YEAR}
+        OFFSET random() * (SELECT COUNT(1) FROM ny.tmc_metadata_${YEAR})
+        LIMIT 1 ; `;
+
+    const {
+      rows: [{ tmc }]
+    } = await query(randomTmcSql);
+
     const sql = `
       SELECT
           ROUND(
@@ -208,16 +216,13 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
           ) AS ninetyfifth_pctl,
           ROUND(
             (
-              ROUND(
-                (percentile_disc(0.95) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
-              )
+              (percentile_disc(0.95) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
               /
-              ROUND(
-                (percentile_disc(0.5) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
-              )
+              (percentile_disc(0.5) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
             ),
             2
           )::NUMERIC AS tttr,
+          COUNT(1) AS tt_ct,
           CASE
             WHEN (start_epoch BETWEEN (6*12) AND (20*12 -1)) THEN
               CASE WHEN (dow BETWEEN 1 AND 5)
@@ -234,18 +239,19 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
         FROM (
           SELECT
               tmc,
-              ROUND(
-                AVG(travel_time_freight_trucks::NUMERIC)
-              ) AS avg_tt,
+              COALESCE(
+                AVG(travel_time_freight_trucks::NUMERIC),
+                AVG(travel_time_all_vehicles::NUMERIC)
+              )::NUMERIC AS avg_tt,
               MIN(EXTRACT(DOW FROM date)) AS dow,
               MIN(epoch) AS start_epoch
             FROM ny.npmrds
             WHERE (
-              (tmc = '${TMC}')
+              (tmc = '${tmc}')
               AND
-              (date >= '20170101')
+              (date >= '${YEAR}0101')
               AND
-              (date < '20180101')
+              (date < '${YEAR + 1}0101')
             )
             GROUP BY tmc, date, FLOOR(epoch / (${timeBinSize} / 5))
         ) AS t1
@@ -277,7 +283,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
     const [attrs] = await getMetadataForTmcs({
       year: YEAR,
-      tmcs: TMC,
+      tmcs: tmc,
       columns: requiredTmcMetadata
     });
 
@@ -286,7 +292,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const data = await getBinnedYearNpmrdsDataForTmc({
       year: YEAR,
       timeBinSize,
-      tmc: TMC,
+      tmc,
       state: attrs.state,
       npmrdsDataKeys
     });
@@ -296,16 +302,29 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const result = await tttrCalculator.calculateForTmc({ data, attrs });
 
     [AMP, MIDD, PMP, WE, OVN].forEach(timePeriod => {
-      expect(dbResultsByTimePeriod[timePeriod].fiftieth_pctl).toBeCloseTo(
-        result.fiftiethPctlTravelTimeByTimePeriod[timePeriod],
+      expect(
+        get(dbResultsByTimePeriod, [timePeriod, 'fiftieth_pctl'], null),
+        `${tmc} 50pctl ${timePeriod} TT (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(result, ['fiftiethPctlTravelTimeByTimePeriod', timePeriod], null),
         CLOSENESS_PRECISION
       );
-      expect(dbResultsByTimePeriod[timePeriod].ninetyfifth_pctl).toBeCloseTo(
-        result.ninetyfifthPctlTravelTimeByTimePeriod[timePeriod],
+      expect(
+        get(dbResultsByTimePeriod, [timePeriod, 'ninetyfifth_pctl'], null),
+        `${tmc} 95pctl TT ${timePeriod} (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(
+          result,
+          ['ninetyfifthPctlTravelTimeByTimePeriod', timePeriod],
+          null
+        ),
         CLOSENESS_PRECISION
       );
-      expect(dbResultsByTimePeriod[timePeriod].tttr).toBeCloseTo(
-        result.tttrByTimePeriod[timePeriod],
+      expect(
+        dbResultsByTimePeriod[timePeriod].tttr,
+        `${tmc} TTTR ${timePeriod} (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(result, ['tttrByTimePeriod', timePeriod], null),
         CLOSENESS_PRECISION
       );
     });

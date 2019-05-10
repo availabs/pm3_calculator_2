@@ -13,6 +13,8 @@ const precisionRound = (number, precision = 0) => {
   return Math.round(+number * factor) / factor;
 };
 
+const toInteger = n => precisionRound(n, 0);
+
 const sumArray = arr => arr.reduce((acc, v) => acc + +v, 0);
 
 const avgArray = arr => sumArray(arr) / arr.length;
@@ -61,6 +63,7 @@ const computeSummaryStats = arr => {
 };
 module.exports = {
   precisionRound,
+  toInteger,
   sumArray,
   avgArray,
   hmeanArray,

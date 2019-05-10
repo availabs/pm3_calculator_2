@@ -1,7 +1,7 @@
 /* eslint no-param-reassign: 0 */
 
 const assert = require('assert');
-const { shuffle } = require('lodash');
+const { get, shuffle } = require('lodash');
 const { query, end } = require('../../storage/services/DBService');
 
 const { getMetadataForTmcs } = require('../../storage/daos/TmcMetadataDao');
@@ -18,8 +18,7 @@ const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
 
 const LottrCalculator = require('./LottrCalculator');
 
-const TMC = '104+04107';
-const YEAR = 2017;
+const YEAR = 2018;
 const TWO_AM_MINS = 120;
 const THREE_AM_MINS = 180;
 
@@ -30,9 +29,9 @@ const timeBinSizes = [5, 15, 60];
 jest.setTimeout(120000);
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
-  test(`LOTTR excess delay hours`, async done => {
+  test(`LOTTR Mock Data`, async done => {
     const attrs = {
-      tmc: 'foobar',
+      tmc: '000000000',
       miles: 2,
       avgSpeedlimit: 50,
       functionalClass: FREEWAY,
@@ -87,7 +86,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
         const curHour = curTime.getHours();
 
         mockNpmrdsData.push({
-          tmc: 'foobar',
+          tmc: '000000000',
           date,
           timeBinNum,
           dow: curDow,
@@ -190,20 +189,31 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 });
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
-  test(`LOTTR excess delay hours`, async done => {
+  test(`LOTTR Database Query Equivalence`, async done => {
+    const randomTmcSql = `
+      SELECT
+          tmc
+        FROM ny.tmc_metadata_${YEAR}
+        OFFSET random() * (SELECT COUNT(1) FROM ny.tmc_metadata_${YEAR})
+        LIMIT 1 ; `;
+
+    const {
+      rows: [{ tmc }]
+    } = await query(randomTmcSql);
+
     const sql = `
       SELECT
-          percentile_cont(0.5) WITHIN GROUP (ORDER BY avg_tt) AS fiftieth_pctl,
-          percentile_cont(0.8) WITHIN GROUP (ORDER BY avg_tt) AS eightieth_pctl,
+          ROUND(
+            (percentile_disc(0.5) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
+          ) AS fiftieth_pctl,
+          ROUND(
+            (percentile_disc(0.8) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
+          ) AS eightieth_pctl,
           ROUND(
             (
-              ROUND(
-                (percentile_cont(0.8) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
-              )
+              (percentile_disc(0.8) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
               /
-              ROUND(
-                (percentile_cont(0.5) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
-              )
+              (percentile_disc(0.5) WITHIN GROUP (ORDER BY avg_tt))::NUMERIC
             ),
             2
           )::NUMERIC AS lottr,
@@ -219,22 +229,20 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
         FROM (
           SELECT
               tmc,
-              ROUND(
-                AVG(travel_time_all_vehicles::NUMERIC)
-              ) AS avg_tt,
-              MIN(EXTRACT(DOW FROM date)) AS dow,
+              AVG(travel_time_all_vehicles::NUMERIC) AS avg_tt,
+              MIN(EXTRACT(DOW FROM date)) AS dow,  -- Need aggregate fn for parser
               MIN(epoch) AS start_epoch
             FROM ny.npmrds
             WHERE (
-              (tmc = '${TMC}')
+              (tmc = '${tmc}')
               AND
-              (date >= '20170101')
+              (date >= '${YEAR}0101')
               AND
-              (date < '20180101')
+              (date < '${YEAR + 1}0101')
               AND
               (epoch BETWEEN (6*12) AND (20*12 - 1))
             )
-            GROUP BY tmc, date, FLOOR(epoch / (${timeBinSize} / 5))
+            GROUP BY tmc, date, FLOOR(epoch / (${timeBinSize} / 5)) /*TIME BIN*/
         ) AS t1
         GROUP BY time_period
       ;
@@ -264,7 +272,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
     const [attrs] = await getMetadataForTmcs({
       year: YEAR,
-      tmcs: TMC,
+      tmcs: tmc,
       columns: requiredTmcMetadata
     });
 
@@ -273,7 +281,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const data = await getBinnedYearNpmrdsDataForTmc({
       year: YEAR,
       timeBinSize,
-      tmc: TMC,
+      tmc,
       state: attrs.state,
       npmrdsDataKeys
     });
@@ -283,17 +291,25 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const result = await lottrCalculator.calculateForTmc({ data, attrs });
 
     [AMP, MIDD, PMP, WE].forEach(timePeriod => {
-      expect(dbResultsByTimePeriod[timePeriod].fiftieth_pctl).toBeCloseTo(
-        result.fiftiethPctlTravelTimeByTimePeriod[timePeriod],
+      expect(
+        get(dbResultsByTimePeriod, [timePeriod, 'fiftieth_pctl'], null),
+        `${tmc} 50pctl TT (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(result, ['fiftiethPctlTravelTimeByTimePeriod', timePeriod], null),
         CLOSENESS_PRECISION
       );
-      expect(dbResultsByTimePeriod[timePeriod].eightieth_pctl).toBeCloseTo(
-        result.eightiethPctlTravelTimeByTimePeriod[timePeriod],
+      expect(
+        get(dbResultsByTimePeriod, [timePeriod, 'eightieth_pctl'], null),
+        `${tmc} 80pctl TT (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(result, ['eightiethPctlTravelTimeByTimePeriod', timePeriod], null),
         CLOSENESS_PRECISION
       );
-      expect(dbResultsByTimePeriod[timePeriod].lottr).toBeCloseTo(
-        result.lottrByTimePeriod[timePeriod],
-        CLOSENESS_PRECISION
+      expect(
+        get(dbResultsByTimePeriod, [timePeriod, 'lottr'], null),
+        `${tmc} LOTTR (timeBinSize=${timeBinSize})`
+      ).toBeCloseTo(
+        get(result, ['lottrByTimePeriod', timePeriod], CLOSENESS_PRECISION)
       );
     });
 
