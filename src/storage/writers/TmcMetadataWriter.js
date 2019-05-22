@@ -24,7 +24,7 @@ const hpmsRequiredTmcMetadata = [
   'faciltype',
   'miles',
   'nhs',
-  'nhs_pct',
+  'nhsPct',
   'state',
   'stateCode',
   'uaCode'
