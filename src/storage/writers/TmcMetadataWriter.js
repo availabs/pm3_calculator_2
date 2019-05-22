@@ -18,15 +18,16 @@ const transformStreamCreators = {
 };
 
 const hpmsRequiredTmcMetadata = [
-  'state',
-  'stateCode',
+  'direction',
   'directionalAadt',
   'fSystem',
-  'uaCode',
   'faciltype',
-  'nhs',
   'miles',
-  'direction'
+  'nhs',
+  'nhs_pct',
+  'state',
+  'stateCode',
+  'uaCode'
 ];
 
 const getRequiredTmcMetadata = ({
@@ -132,6 +133,7 @@ class TmcMetadataWriter {
       // When the OutputWriter sets the outputDirPath, this writer can create the
       //   outputStream and becomes ready.
       this.ready = new Promise(resolve => {
+        // When outputDirPath is set, resolve this promise
         this.setOutputDirPath = outputDirPath => {
           this.outputDirPath = outputDirPath;
           this.outputStream = getOutputStream(this);
