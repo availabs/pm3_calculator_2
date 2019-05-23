@@ -81,7 +81,8 @@ const sql = `
             (
               (measure = 'TMC_METADATA')
               AND
-              (attribute = ANY(ARRAY[${values2PgArr(tmcMetadataColMappings)}]))
+              -- NOTE: Also requesting nhsPct
+              (attribute = ANY(ARRAY['nhsPct',${values2PgArr(tmcMetadataColMappings)}]))
             )
             OR
             (
@@ -133,6 +134,16 @@ const dumpData = async () => {
                     E: 3,
                     W: 4
                   }[data.TMC_METADATA[v]] || 5
+                } else if (k === 'Segment_Length') {
+                  // Scale the Segment_Lengths
+                  // NOTE:
+                  //   select * from tmc_metadata_2018 where (nhs_pct is null or nhs_pct = 0) and border_set <> 'Y';
+                  //   (0 rows)
+                  const {[data.TMC_METADATA[v]]: miles, nhsPct} = data
+
+                  const nhsRatio = nhsPct ? nhsPct / 100 : 0
+
+                  acc[k] = miles * nhsRatio
                 } else {
                   acc[k] =
                     data.TMC_METADATA && !isNil(data.TMC_METADATA[v])
