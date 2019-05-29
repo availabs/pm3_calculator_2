@@ -15,7 +15,7 @@ const getCalculatorInstanceOutputFileName = ({
     measureOutputFileCounts[measure]
   }.${lowerCase(outputFileFormat)}`;
 
-  return filename;
+  return filename.replace(/ /g, '_');
 };
 
 module.exports = getCalculatorInstanceOutputFileName;

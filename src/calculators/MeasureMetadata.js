@@ -7,7 +7,8 @@ const impls = [
   require('./SummaryStatistics/SummaryStatisticsCalculator'),
   require('./Ted/TedCalculator'),
   require('./TrafficDistributionFactors/TrafficDistributionFactorsCalculator'),
-  require('./Tttr/TttrCalculator')
+  require('./Tttr/TttrCalculator'),
+  require('./FreeFlow/FreeFlowCalculator')
 ];
 
 const metadata = impls.reduce(
