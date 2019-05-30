@@ -104,18 +104,27 @@ class FreeFlowCalculator {
 
     const result = { tmc, npmrdsDataKey };
 
-    if (isSpeedBased) {
-      result.eightyFifthPctlSpeed = roundTravelTimes
-        ? precisionRound(
-            quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL)
-          )
-        : quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL);
+    if (
+      Array.isArray(metricValuesAcrossTimePeriods) &&
+      metricValuesAcrossTimePeriods.length
+    ) {
+      if (isSpeedBased) {
+        result.eightyFifthPctlSpeed = roundTravelTimes
+          ? precisionRound(
+              quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL)
+            )
+          : quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL);
+      } else {
+        result.fifteenthPctlTravelTime = precisionRound
+          ? precisionRound(
+              quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL)
+            )
+          : quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL);
+      }
+    } else if (isSpeedBased) {
+      result.eightyFifthPctlSpeed = null;
     } else {
-      result.fifteenthPctlTravelTime = precisionRound
-        ? precisionRound(
-            quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL)
-          )
-        : quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL);
+      result.fifteenthPctlTravelTime = null;
     }
 
     return this.outputFormatter(result);
