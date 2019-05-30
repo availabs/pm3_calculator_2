@@ -255,16 +255,16 @@ class PhedCalculator {
       Object.assign({}, calcConfigParams, { outputFormat: IDENTITY })
     );
 
+    this.thresholdSpeedCalculator = {
+      requiredTmcMetadata: ['avgSpeedlimit'],
+      calculateThresholdSpeed: async ({ attrs: { avgSpeedlimit } }) =>
+        Math.max(avgSpeedlimit * 0.6, 20)
+    };
+
     this.vehClassDirAadtTypes = vehClass2DirAadtTypes[this.npmrdsDataSource];
 
     this.avgVehcleOccupancyTypes = this.vehClassDirAadtTypes.map(t =>
       t.replace(/directionalAadt/, 'avgVehicleOccupancy')
-    );
-
-    this.requiredTmcMetadata = union(
-      ['avgSpeedlimit', 'miles', 'functionalClass', 'avgVehicleOccupancy'],
-      this.vehClassDirAadtTypes,
-      this.trafficDistributionFactorsCalculator.requiredTmcMetadata
     );
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
@@ -272,6 +272,15 @@ class PhedCalculator {
     this.isSpeedBased = this.npmrdsMetric === SPEED;
 
     this.isCanonical = isCanonicalConfig.call(this, configDefaults);
+  }
+
+  get requiredTmcMetadata() {
+    return union(
+      ['functionalClass', 'avgVehicleOccupancy'],
+      this.vehClassDirAadtTypes,
+      this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
+      this.thresholdSpeedCalculator.requiredTmcMetadata
+    );
   }
 
   async calculateForTmc({ data, attrs }) {
@@ -320,7 +329,9 @@ class PhedCalculator {
       }
     );
 
-    const thresholdSpeed = Math.max(avgSpeedlimit * 0.6, 20);
+    const thresholdSpeed = await this.thresholdSpeedCalculator.calculateThresholdSpeed(
+      { data, attrs }
+    );
 
     // mi / mi/hr * sec/hr == mi * hr/mi * sec/hr == hr * sec/hr == sec
     const thresholdTravelTimeSec = roundTravelTimes
