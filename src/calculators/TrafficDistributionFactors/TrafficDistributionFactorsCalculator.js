@@ -95,7 +95,7 @@ class TrafficDistributionFactorsCalculator {
     const combinedPeak = [0, 0];
     const amPeak = [0, 0];
     const pmPeak = [0, 0];
-    const freeFlow = [0, 0];
+    const freeflow = [0, 0];
 
     for (let i = 0; i < data.length; ++i) {
       const row = data[i];
@@ -120,8 +120,8 @@ class TrafficDistributionFactorsCalculator {
           ++pmPeak[0];
           pmPeak[1] += +metricValue;
         } else if (timePeriod === FREEFLOW) {
-          freeFlow[0] += 1;
-          freeFlow[1] += +metricValue;
+          freeflow[0] += 1;
+          freeflow[1] += +metricValue;
         }
       }
     }
@@ -132,7 +132,7 @@ class TrafficDistributionFactorsCalculator {
 
     const amPeakAvgTT = this.speedBased ? null : amPeak[1] / amPeak[0];
     const pmPeakAvgTT = this.speedBased ? null : pmPeak[1] / pmPeak[0];
-    const freeFlowAvgTT = this.speedBased ? null : freeFlow[1] / freeFlow[0];
+    const freeflowAvgTT = this.speedBased ? null : freeflow[1] / freeflow[0];
 
     const combinedPeakAvgSpeed = this.speedBased
       ? combinedPeak[1] / combinedPeak[0]
@@ -146,11 +146,11 @@ class TrafficDistributionFactorsCalculator {
       ? pmPeak[1] / pmPeak[0]
       : (tmcMiles / pmPeakAvgTT) * 3600;
 
-    const freeFlowAvgSpeed = this.speedBased
-      ? freeFlow[1] / freeFlow[0]
-      : (tmcMiles / freeFlowAvgTT) * 3600;
+    const freeflowAvgSpeed = this.speedBased
+      ? freeflow[1] / freeflow[0]
+      : (tmcMiles / freeflowAvgTT) * 3600;
 
-    const speedReductionFactor = combinedPeakAvgSpeed / freeFlowAvgSpeed;
+    const speedReductionFactor = combinedPeakAvgSpeed / freeflowAvgSpeed;
 
     let congestionLevel;
 
@@ -189,11 +189,11 @@ class TrafficDistributionFactorsCalculator {
       combinedPeakAvgTT: precisionRound(combinedPeakAvgTT, 3),
       amPeakAvgTT: precisionRound(amPeakAvgTT, 3),
       pmPeakAvgTT: precisionRound(pmPeakAvgTT, 3),
-      freeFlowAvgTT: precisionRound(freeFlowAvgTT, 3),
+      freeflowAvgTT: precisionRound(freeflowAvgTT, 3),
       combinedPeakAvgSpeed: precisionRound(combinedPeakAvgSpeed, 3),
       amPeakAvgSpeed: precisionRound(amPeakAvgSpeed, 3),
       pmPeakAvgSpeed: precisionRound(pmPeakAvgSpeed, 3),
-      freeFlowAvgSpeed: precisionRound(freeFlowAvgSpeed, 3),
+      freeflowAvgSpeed: precisionRound(freeflowAvgSpeed, 3),
       speedReductionFactor: precisionRound(speedReductionFactor, 3),
       peakSpeedDifferential: precisionRound(peakSpeedDifferential, 3),
       congestionLevel,

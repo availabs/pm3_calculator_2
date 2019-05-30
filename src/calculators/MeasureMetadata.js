@@ -4,13 +4,13 @@ const impls = [
   require('./Lottr/LottrCalculator'),
   require('./PercentBinsReporting/PercentBinsReportingCalculator'),
   require('./Phed/PhedCalculator'),
-  require('./PhedFreeFlow/PhedFreeflowCalculator'),
+  require('./PhedFreeflow/PhedFreeflowCalculator'),
   require('./SummaryStatistics/SummaryStatisticsCalculator'),
   require('./Ted/TedCalculator'),
   require('./TedFreeflow/TedFreeflowCalculator'),
   require('./TrafficDistributionFactors/TrafficDistributionFactorsCalculator'),
   require('./Tttr/TttrCalculator'),
-  require('./FreeFlow/FreeFlowCalculator')
+  require('./Freeflow/FreeflowCalculator')
 ];
 
 const metadata = impls.reduce(

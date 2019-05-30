@@ -1,29 +1,29 @@
 const PhedCalculator = require('../Phed/PhedCalculator');
-const FreeFlowCalculator = require('../FreeFlow/FreeFlowCalculator');
+const FreeflowCalculator = require('../Freeflow/FreeflowCalculator');
 
 const { union } = require('../../utils/SetUtils');
 
 const { IDENTITY } = require('../../enums/outputFormats');
 
-const PHED_FREE_FLOW = 'PHED_FREE_FLOW';
+const PHED_FREEFLOW = 'PHED_FREEFLOW';
 
-class PhedFreeFlowCalculator extends PhedCalculator {
+class PhedFreeflowCalculator extends PhedCalculator {
   constructor(calcConfigParams) {
     super(calcConfigParams);
 
-    const freeFlowCalculator = new FreeFlowCalculator(
+    const freeflowCalculator = new FreeflowCalculator(
       Object.assign({}, calcConfigParams, { outputFormat: IDENTITY })
     );
 
     this.thresholdSpeedCalculator = {
-      requiredTmcMetadata: union(freeFlowCalculator.requiredTmcMetadata, [
+      requiredTmcMetadata: union(freeflowCalculator.requiredTmcMetadata, [
         'miles'
       ]),
       calculateThresholdSpeed: async ({ data, attrs }) => {
         const { miles } = attrs;
         const {
           fifteenthPctlTravelTime
-        } = await freeFlowCalculator.calculateForTmc({
+        } = await freeflowCalculator.calculateForTmc({
           data,
           attrs
         });
@@ -36,11 +36,11 @@ class PhedFreeFlowCalculator extends PhedCalculator {
   }
 }
 
-PhedFreeFlowCalculator.measure = PHED_FREE_FLOW;
+PhedFreeflowCalculator.measure = PHED_FREEFLOW;
 
-PhedFreeFlowCalculator.configDefaults = PhedCalculator.configDefaults;
-PhedFreeFlowCalculator.configOptions = PhedCalculator.configOptions;
-PhedFreeFlowCalculator.defaultTimePeriodSpec =
+PhedFreeflowCalculator.configDefaults = PhedCalculator.configDefaults;
+PhedFreeflowCalculator.configOptions = PhedCalculator.configOptions;
+PhedFreeflowCalculator.defaultTimePeriodSpec =
   PhedCalculator.defaultTimePeriodSpec;
 
-module.exports = PhedFreeFlowCalculator;
+module.exports = PhedFreeflowCalculator;

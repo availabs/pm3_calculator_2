@@ -26,15 +26,15 @@ const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
-  FREE_FLOW_TIME_PERIOD_SPEC
+  FREEFLOW_TIME_PERIOD_SPEC
 } = timePeriodSpecNamesEnum;
 
 const defaultTimePeriodSpec =
-  generalTimePeriodSpecs[FREE_FLOW_TIME_PERIOD_SPEC];
+  generalTimePeriodSpecs[FREEFLOW_TIME_PERIOD_SPEC];
 
-const outputFormatters = require('./FreeFlowOutputFormatters');
+const outputFormatters = require('./FreeflowOutputFormatters');
 
-const FREE_FLOW = 'FREE_FLOW';
+const FREEFLOW = 'FREEFLOW';
 const FIFTEENTH_PCTL = 0.15;
 const EIGHTY_FIFTH_PCTL = 0.85;
 
@@ -45,9 +45,9 @@ function isCanonicalConfig(configDefaults) {
   );
 }
 
-class FreeFlowCalculator {
+class FreeflowCalculator {
   constructor(calcConfigParams) {
-    const { configDefaults } = FreeFlowCalculator;
+    const { configDefaults } = FreeflowCalculator;
 
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
@@ -122,21 +122,21 @@ class FreeFlowCalculator {
   }
 }
 
-FreeFlowCalculator.measure = FREE_FLOW;
-FreeFlowCalculator.configDefaults = {
+FreeflowCalculator.measure = FREEFLOW;
+FreeflowCalculator.configDefaults = {
   meanType: ARITHMETIC,
   npmrdsDataSource: ALL,
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   roundTravelTimes: false
 };
-FreeFlowCalculator.configOptions = {
+FreeflowCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames,
   roundTravelTimes: [true, false]
 };
-FreeFlowCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
+FreeflowCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
-module.exports = FreeFlowCalculator;
+module.exports = FreeflowCalculator;

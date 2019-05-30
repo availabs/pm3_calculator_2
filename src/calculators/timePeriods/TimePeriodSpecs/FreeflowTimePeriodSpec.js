@@ -1,4 +1,4 @@
-const { AM_OFF, PM_OFF, WE } = require('../../../enums/freeFlowTimePeriods');
+const { AM_OFF, PM_OFF, WE } = require('../../../enums/freeflowTimePeriods');
 
 module.exports = {
   [AM_OFF]: {

@@ -1,4 +1,4 @@
-const PhedFreeflowCalculator = require('../PhedFreeFlow/PhedFreeflowCalculator')
+const PhedFreeflowCalculator = require('../PhedFreeflow/PhedFreeflowCalculator')
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
 const {
