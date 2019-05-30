@@ -137,7 +137,7 @@ FreeFlowCalculator.configDefaults = {
   npmrdsDataSource: ALL,
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
-  roundTravelTimes: true
+  roundTravelTimes: false
 };
 FreeFlowCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
