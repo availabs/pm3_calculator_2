@@ -1,6 +1,5 @@
 /* eslint no-param-reassign: 0 */
 
-const assert = require('assert');
 const { get, shuffle } = require('lodash');
 const { query, end } = require('../../storage/services/DBService');
 
@@ -13,7 +12,6 @@ const NpmrdsDataEnricher = require('../../utils/NpmrdsDataEnricher');
 const { precisionRound } = require('../../utils/MathUtils');
 const { getDaylightSavingsStartDateForYear } = require('../../utils/TimeUtils');
 const { IDENTITY } = require('../../enums/outputFormats');
-const { FREEWAY } = require('../../enums/functionalClasses');
 const { AMP, MIDD, PMP, WE } = require('../../enums/pm3TimePeriods');
 
 const LottrCalculator = require('./LottrCalculator');
@@ -31,18 +29,8 @@ jest.setTimeout(120000);
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
   test(`LOTTR Mock Data`, async done => {
     const attrs = {
-      tmc: '000000000',
-      miles: 2,
-      avgSpeedlimit: 50,
-      functionalClass: FREEWAY,
-      avgVehicleOccupancy: 3
+      tmc: '000000000'
     };
-
-    const thresholdTravelTimeSec = precisionRound(
-      (attrs.miles / Math.max(attrs.avgSpeedlimit * 0.6, 20)) * 3600
-    );
-
-    assert(Number.isSafeInteger(thresholdTravelTimeSec));
 
     const lottrCalculator = new LottrCalculator({
       year: YEAR,

@@ -10,7 +10,9 @@ const impls = [
   require('./TedFreeflow/TedFreeflowCalculator'),
   require('./TrafficDistributionFactors/TrafficDistributionFactorsCalculator'),
   require('./Tttr/TttrCalculator'),
-  require('./Freeflow/FreeflowCalculator')
+  require('./Freeflow/FreeflowCalculator'),
+  require('./TravelTimeIndexCalculator/TravelTimeIndexCalculator'),
+  require('./PlanningTimeIndexCalculator/PlanningTimeIndexCalculator'),
 ];
 
 const metadata = impls.reduce(

@@ -29,8 +29,7 @@ const {
   FREEFLOW_TIME_PERIOD_SPEC
 } = timePeriodSpecNamesEnum;
 
-const defaultTimePeriodSpec =
-  generalTimePeriodSpecs[FREEFLOW_TIME_PERIOD_SPEC];
+const defaultTimePeriodSpec = generalTimePeriodSpecs[FREEFLOW_TIME_PERIOD_SPEC];
 
 const outputFormatters = require('./FreeflowOutputFormatters');
 
@@ -109,17 +108,23 @@ class FreeflowCalculator {
       metricValuesAcrossTimePeriods.length
     ) {
       if (isSpeedBased) {
+        const ffSpeed = quantileSorted(
+          metricValuesAcrossTimePeriods,
+          EIGHTY_FIFTH_PCTL
+        );
+
         result.eightyFifthPctlSpeed = roundTravelTimes
-          ? precisionRound(
-              quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL)
-            )
-          : quantileSorted(metricValuesAcrossTimePeriods, EIGHTY_FIFTH_PCTL);
+          ? precisionRound(ffSpeed)
+          : ffSpeed;
       } else {
-        result.fifteenthPctlTravelTime = precisionRound
-          ? precisionRound(
-              quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL)
-            )
-          : quantileSorted(metricValuesAcrossTimePeriods, FIFTEENTH_PCTL);
+        const ffTTime = quantileSorted(
+          metricValuesAcrossTimePeriods,
+          FIFTEENTH_PCTL
+        );
+
+        result.fifteenthPctlTravelTime = roundTravelTimes
+          ? precisionRound(ffTTime)
+          : ffTTime;
       }
     } else if (isSpeedBased) {
       result.eightyFifthPctlSpeed = null;
