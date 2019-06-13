@@ -51,7 +51,8 @@ const notSingleCompleteState = async calculatorSettings => {
   );
 
   return !Array.isArray(requestedGeographies) ||
-    requestedGeographies.length > 1 ||
+    !Array.isArray(requestedGeographies) ||
+    requestedGeographies.length !== 1 ||
     requestedGeographies[0].geolevel !== 'STATE'
     ? 'Authoritative version candidates must be run for a single, complete state.'
     : null;
