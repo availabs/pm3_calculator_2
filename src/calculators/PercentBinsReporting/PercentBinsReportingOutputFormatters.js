@@ -4,7 +4,11 @@ const { EAV } = require('../../enums/outputFormats');
 const basicOutputFormatters = require('../../utils/basicOutputFormatters');
 
 function eavFormatter(output) {
-  const { tmc, percentBinsReportingByTimePeriod } = output;
+  const {
+    tmc,
+    totalPercentBinsReporting,
+    percentBinsReportingByTimePeriod
+  } = output;
 
   const baseFields = {
     tmc,
@@ -12,7 +16,13 @@ function eavFormatter(output) {
     measure: this.constructor.measure
   };
 
-  const formatted = [];
+  const formatted = [
+    {
+      ...baseFields,
+      attribute: 'pct_bins_reporting',
+      value: totalPercentBinsReporting
+    }
+  ];
 
   formatted.push(
     ...Object.keys(percentBinsReportingByTimePeriod).map(timePeriod => ({

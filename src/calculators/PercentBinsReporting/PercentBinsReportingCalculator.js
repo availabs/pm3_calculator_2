@@ -12,7 +12,10 @@ const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const { precisionRound } = require('../../utils/MathUtils');
 
-const { getNumBinsPerTimePeriodForYear } = require('../../utils/TimeUtils');
+const {
+  getNumBinsForYear,
+  getNumBinsPerTimePeriodForYear
+} = require('../../utils/TimeUtils');
 
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 
@@ -69,6 +72,7 @@ class PercentBinsReportingCalculator {
 
     this.timePeriodIdentifier = createTimePeriodIdentifier(timePeriodSpec);
 
+    this.numBinsForYear = getNumBinsForYear(this);
     this.numBinsPerTimePeriodForYear = getNumBinsPerTimePeriodForYear(this);
 
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
@@ -80,23 +84,34 @@ class PercentBinsReportingCalculator {
     const { tmc } = attrs;
 
     const {
+      numBinsForYear,
       npmrdsDataKeys: [npmrdsDataKey]
     } = this;
+
+    let totalCount = 0;
 
     const countsByTimePeriod = data.reduce((acc, row) => {
       assert.strictEqual(row.tmc, attrs.tmc);
 
       const { [npmrdsDataKey]: metricValue } = row;
+
+      if (metricValue !== null) {
+        ++totalCount;
+      } else {
+        return acc;
+      }
+
       const timePeriod = this.timePeriodIdentifier(row);
 
-      // console.error('==>', typeof timePeriod);
-      if (timePeriod && metricValue !== null) {
+      if (timePeriod) {
         acc[timePeriod] = acc[timePeriod] || 0;
         ++acc[timePeriod];
       }
 
       return acc;
     }, {});
+
+    const totalPercentBinsReporting = precisionRound(totalCount / numBinsForYear, 3);
 
     const percentBinsReportingByTimePeriod = Object.keys(
       this.numBinsPerTimePeriodForYear
@@ -109,7 +124,11 @@ class PercentBinsReportingCalculator {
       return acc;
     }, {});
 
-    return this.outputFormatter({ tmc, percentBinsReportingByTimePeriod });
+    return this.outputFormatter({
+      tmc,
+      totalPercentBinsReporting,
+      percentBinsReportingByTimePeriod
+    });
   }
 }
 
