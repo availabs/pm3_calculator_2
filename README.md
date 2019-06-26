@@ -18,5 +18,5 @@ NOTE: The .env file supports line comments and variables.
 ## Calculator configuration
 
 ```
-./index.js --help
+./run --help
 ```

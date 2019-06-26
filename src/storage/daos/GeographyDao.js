@@ -41,8 +41,6 @@ const getGeographyAttributesQueryCriteria = ({
 };
 
 const getGeographyAttributes = async geographyDescriptor => {
-  const { year } = geographyDescriptor;
-
   const {
     whereClauses,
     parameterizedValues
@@ -72,7 +70,7 @@ const getGeographyAttributes = async geographyDescriptor => {
 							PARTITION BY geography_level, geography_level_code
 							ORDER BY array_length(states, 1) DESC
 						)
-					FROM geography_metadata_${year}
+					FROM geography_metadata
 					WHERE (
 						${whereClauses.map(c => `(${c})`).join(' AND ')}
 					)
