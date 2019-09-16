@@ -5,13 +5,9 @@ const { quantileSorted } = require('simple-statistics');
 const _ = require('lodash');
 
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
-const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
+const { SPEED } = require('../../enums/npmrdsMetrics');
 
-const {
-  numbersComparator,
-  precisionRound,
-  toInteger
-} = require('../../utils/MathUtils');
+const { numbersComparator } = require('../../utils/MathUtils');
 
 const createTimePeriodIdentifier = require('../timePeriods/createTimePeriodIdentifier');
 

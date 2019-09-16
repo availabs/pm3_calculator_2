@@ -1,6 +1,6 @@
 const yargs = require('yargs');
 
-const { camelCase, lowerCase, upperCase, pick } = require('lodash');
+const { camelCase, snakeCase, pick } = require('lodash');
 
 const { uniq } = require('./utils/SetUtils');
 
@@ -35,7 +35,8 @@ const {
 const measureNames = Object.keys(measureNamesEnum);
 
 const measureSpecificCliFlagsRE = new RegExp(
-  measureNames.map(m => `^${lowerCase(m)}`).join('|')
+  measureNames.map(m => `^${camelCase(m)}`).join('|'),
+  'i'
 );
 
 const generalCliArgsSpec = {
@@ -146,9 +147,10 @@ const calculatorSettings = pick(argv, Object.keys(cliArgsSpec));
 Object.keys(calculatorSettings)
   .filter(f => f.match(measureSpecificCliFlagsRE))
   .forEach(measureSpecificCliFlag => {
-    const measure = upperCase(
-      measureSpecificCliFlag.match(measureSpecificCliFlagsRE)
-    );
+    const measure = snakeCase(
+      //  Above filter guarantees match
+      measureSpecificCliFlag.match(measureSpecificCliFlagsRE)[0]
+    ).toUpperCase();
 
     if (!calculatorSettings.measures.includes(measure)) {
       throw new Error(
