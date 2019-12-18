@@ -1,5 +1,5 @@
 /* eslint no-await-in-loop: 0 */
-const { camelCase } = require('lodash');
+const _ = require('lodash');
 
 const { query } = require('../services/DBService');
 
@@ -97,7 +97,7 @@ const avgVehicleOccupancyTruck = `(
 
 const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
   (acc, col) => {
-    acc[camelCase(col)] = col;
+    acc[_.camelCase(col)] = col;
     return acc;
   },
   {
@@ -119,7 +119,7 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
 
 const tmcMetadataFields = Object.keys(alias2DbColsMappings);
 
-const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
+const _getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   const tmcsArr = Array.isArray(tmcs) ? tmcs.slice() : [tmcs];
 
   const colAliases = new Set(
@@ -151,6 +151,34 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   }
 
   return result;
+};
+
+const getMetadataForTmcs = async ({ tmcs, columns }) => {
+  const tmcMetadata2018 = await _getMetadataForTmcs({
+    year: 2018,
+    tmcs,
+    columns
+  });
+
+  const tmcMetadata2018WithAadt = tmcMetadata2018.filter(
+    ({ directionalAadt: dirAadt }) => dirAadt
+  );
+
+  const tmcsMissing2018Aadt = _.difference(
+    tmcs,
+    tmcMetadata2018WithAadt.map(({ tmc }) => tmc)
+  );
+
+  const tmcMetadata2017 = await _getMetadataForTmcs({
+    year: 2017,
+    tmcsMissing2018Aadt,
+    columns
+  });
+
+  return _.sortBy(
+    Array.prototype.concat(tmcMetadata2018, tmcMetadata2017),
+    'tmc'
+  );
 };
 
 module.exports = {
