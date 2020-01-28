@@ -37,9 +37,6 @@ const { argv } = yargs
       type: 'number',
       demand: true
     },
-    calculatorTimestamp: {
-      type: 'string'
-    }
   });
 
 const YEAR = argv.year;

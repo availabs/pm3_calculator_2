@@ -58,8 +58,7 @@ const tmcMetadataTableColumnNames = [
   'avg_vehicle_occupancy',
   'state_code',
   'county_code',
-  'conflation_year',
-  'npmrds_shapefile_version'
+  'isprimary'
 ];
 
 const buildDirAadtClause = aadtExpr =>
