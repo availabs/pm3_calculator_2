@@ -160,25 +160,32 @@ const getMetadataForTmcs = async ({ tmcs, columns }) => {
     columns
   });
 
-  const tmcMetadata2018WithAadt = tmcMetadata2018.filter(
-    ({ directionalAadt: dirAadt }) => dirAadt
-  );
+  const tmcMetadata2018ByTmc = tmcMetadata2018.reduce((acc, row) => {
+    const { tmc } = row
 
-  const tmcsMissing2018Aadt = _.difference(
-    tmcs,
-    tmcMetadata2018WithAadt.map(({ tmc }) => tmc)
-  );
+    acc[tmc] = row
+    return acc
+  }, {})
+
+  const tmcsMissing2018Aadt = Object.keys(tmcMetadata2018ByTmc).filter(tmc => !tmcMetadata2018ByTmc[tmc].directionalAadt)
 
   const tmcMetadata2017 = await _getMetadataForTmcs({
     year: 2017,
-    tmcsMissing2018Aadt,
+    tmcs: tmcsMissing2018Aadt,
     columns
   });
 
-  return _.sortBy(
-    Array.prototype.concat(tmcMetadata2018, tmcMetadata2017),
-    'tmc'
-  );
+  for (let i = 0; i < tmcMetadata2017.length; ++i) {
+    const metadata2017 = _.omit(tmcMetadata2017[i], 'miles')
+
+    const { tmc } = metadata2017
+
+    Object.assign(tmcMetadata2018ByTmc[tmc], metadata2017, { backfilled_2017_metadata: true })
+  }
+
+  const metadata = _(tmcMetadata2018ByTmc).values().sortBy('tmc').value()
+
+  return metadata
 };
 
 module.exports = {
