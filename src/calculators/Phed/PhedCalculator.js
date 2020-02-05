@@ -4,11 +4,13 @@ const assert = require('assert');
 
 // const { sync: mkdirpSync } = require('mkdirp');
 
-const { isEqual, mapValues } = require('lodash');
+const _ = require('lodash');
 
 const {
   getFractionOfDailyAadtByDowByTimeBin
 } = require('../../storage/daos/TrafficDistributionProfilesDao');
+
+const { NPMRDS_AADT, RIS_AADT } = require('../../enums/aadtSources');
 
 const {
   AVAIL,
@@ -69,7 +71,10 @@ const vehClass2DirAadtTypes = {
 function getDirAadtByVehClass(attrs) {
   return this.vehClassDirAadtTypes.reduce((acc, vehClassDirAadtType) => {
     const vehClass =
-      vehClassDirAadtType.replace(/directionalAadt/, '').toLowerCase() || 'all';
+      vehClassDirAadtType.replace(/directional(Ris)?Aadt/, '').toLowerCase() ||
+      'all';
+
+    // console.log(vehClassDirAadtType, vehClass, attrs[vehClassDirAadtType]);
 
     acc[vehClass] = attrs[vehClassDirAadtType];
     return acc;
@@ -79,10 +84,25 @@ function getDirAadtByVehClass(attrs) {
 function getAvgVehicleOccupancyByVehClass(attrs) {
   return this.avgVehcleOccupancyTypes.reduce((acc, avgVehcleOccupancyType) => {
     const vehClass =
-      avgVehcleOccupancyType.replace(/avgVehicleOccupancy/, '').toLowerCase() ||
-      'all';
+      avgVehcleOccupancyType
+        .replace(/avgVehicleOccupancy/, '')
+        .replace(/Ris$/, '')
+        .toLowerCase() || 'all';
 
     acc[vehClass] = attrs[avgVehcleOccupancyType];
+
+    // console.log(
+    // JSON.stringify(
+    // {
+    // avgVehcleOccupancyType,
+    // vehClass,
+    // attrs
+    // },
+    // null,
+    // 4
+    // )
+    // );
+
     return acc;
   }, {});
 }
@@ -126,7 +146,7 @@ const getXDelayVehHrsByVehClass = (
   const fractionOfDailyAadt =
     fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
 
-  const xdelayVehHrsByVehClass = mapValues(dirAadtByVehClass, dirAadt => {
+  const xdelayVehHrsByVehClass = _.mapValues(dirAadtByVehClass, dirAadt => {
     const trafficVol = roundTravelTimes
       ? precisionRound(dirAadt * fractionOfDailyAadt, 1)
       : dirAadt * fractionOfDailyAadt;
@@ -175,6 +195,19 @@ const getXDelayPerHrsByVehClassByTimePeriod = (
     avgVehicleOccupancyByVehClass
   } = tmcCalcCtx;
 
+  // console.log(
+  // JSON.stringify(
+  // {
+  // timePeriods,
+  // roundTravelTimes,
+  // vehicleClasses,
+  // avgVehicleOccupancyByVehClass
+  // },
+  // null,
+  // 4
+  // )
+  // );
+
   return timePeriods.reduce((acc, timePeriod) => {
     const xdelayVehHrsByVehClass =
       xdelayVehHrsByVehClassByTimePeriod[timePeriod];
@@ -219,7 +252,9 @@ const getTotalXDelayPerHrsByVehClass = (
 function isCanonicalConfig(configDefaults) {
   return (
     this.timeBinSize === 15 &&
-    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+    Object.keys(configDefaults).every(k =>
+      _.isEqual(this[k], configDefaults[k])
+    )
   );
 }
 
@@ -230,6 +265,7 @@ class PhedCalculator {
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
+    this.aadtSource = calcConfigParams.aadtSource;
 
     this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
       this
@@ -267,6 +303,15 @@ class PhedCalculator {
       t.replace(/directionalAadt/, 'avgVehicleOccupancy')
     );
 
+    if (this.aadtSource === RIS_AADT) {
+      this.vehClassDirAadtTypes = this.vehClassDirAadtTypes.map(aadtType =>
+        aadtType.replace(/Aadt/, 'RisAadt')
+      );
+      this.avgVehcleOccupancyTypes = this.avgVehcleOccupancyTypes.map(
+        aadtType => aadtType.replace(/$/, 'Ris')
+      );
+    }
+
     this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
@@ -276,7 +321,13 @@ class PhedCalculator {
 
   get requiredTmcMetadata() {
     return union(
-      ['functionalClass', 'avgVehicleOccupancy', 'isprimary'],
+      [
+        'functionalClass',
+        'isprimary',
+        this.aadtSource === RIS_AADT
+          ? 'avgVehicleOccupancyRis'
+          : 'avgVehicleOccupancy'
+      ],
       this.vehClassDirAadtTypes,
       this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
       this.thresholdSpeedCalculator.requiredTmcMetadata
@@ -458,6 +509,7 @@ PhedCalculator.measure = PHED;
 PhedCalculator.configDefaults = {
   meanType: ARITHMETIC,
   npmrdsDataSource: ALL,
+  aadtSource: NPMRDS_AADT,
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   trafficDistributionTimeBinSize: 60,
@@ -467,6 +519,7 @@ PhedCalculator.configDefaults = {
 PhedCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
+  aadtSource: [NPMRDS_AADT, RIS_AADT],
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames,
   trafficDistributionTimeBinSize: [5, 15, 60],

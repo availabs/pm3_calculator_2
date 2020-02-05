@@ -5,6 +5,10 @@ const { query } = require('../services/DBService');
 
 const { FREEWAY, NONFREEWAY } = require('../../enums/functionalClasses');
 
+const {
+  getRisBasedAadtViewForNpmrdsYear
+} = require('../../utils/getRisBasedAadtForTmcsMetadata');
+
 const TMC_SUBSET_SIZE = 1000;
 
 const tmcMetadataTableColumnNames = [
@@ -38,6 +42,9 @@ const tmcMetadataTableColumnNames = [
   'aadt',
   'aadt_singl',
   'aadt_combi',
+  'ris_aadt',
+  'ris_aadt_singl',
+  'ris_aadt_combi',
   'nhs',
   'nhs_pct',
   'strhnt_typ',
@@ -79,20 +86,19 @@ const avgVehicleOccupancyPass = 1.55;
 const avgVehicleOccupancySingl = 10.25;
 const avgVehicleOccupancyCombi = 1.11;
 
-const avgVehicleOccupancy = `(
-  (
-    (${avgVehicleOccupancyPass} * ${aadtPass})
-    + (${avgVehicleOccupancySingl} * aadtSingl)
-    + (${avgVehicleOccupancyCombi} * aadtCombi)
-  ) / NULLIF(aadt, 0)
-)`;
-
 const avgVehicleOccupancyTruck = `(
   (
-    (${avgVehicleOccupancySingl} * aadtSingl)
-    + (${avgVehicleOccupancyCombi} * aadtCombi)
-  ) / NULLIF(aadtSingl + aadtCombi, 0)
+    (${avgVehicleOccupancySingl} * aadt_singl)
+    + (${avgVehicleOccupancyCombi} * aadt_combi)
+  ) / NULLIF(aadt_singl + aadt_combi, 0)
 )`;
+
+const toRisBased = str => {
+  return str
+    .replace(/\baadt\b/g, 'ris_aadt')
+    .replace(/aadt_/g, 'ris_aadt_')
+    .replace(/Aadt/, 'RisAadt');
+};
 
 const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
   (acc, col) => {
@@ -101,6 +107,7 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
   },
   {
     functionalClass,
+
     aadtTruck,
     aadtPass,
     directionalAadt,
@@ -108,11 +115,33 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
     directionalAadtCombi,
     directionalAadtTruck,
     directionalAadtPass,
-    avgVehicleOccupancy,
+
+    // avgVehicleOccupancy comes from tmc_metadata table
     avgVehicleOccupancyPass,
     avgVehicleOccupancySingl,
     avgVehicleOccupancyCombi,
-    avgVehicleOccupancyTruck
+    avgVehicleOccupancyTruck,
+
+    risAadtTruck: toRisBased(aadtTruck),
+    risAadtPass: toRisBased(aadtPass),
+    directionalRisAadt: toRisBased(directionalAadt),
+    directionalRisAadtSingl: toRisBased(directionalAadtSingl),
+    directionalRisAadtCombi: toRisBased(directionalAadtCombi),
+    directionalRisAadtTruck: toRisBased(directionalAadtTruck),
+    directionalRisAadtPass: toRisBased(directionalAadtPass),
+
+    avgVehicleOccupancyRis: `(
+      (
+        (${avgVehicleOccupancyPass} * ${toRisBased(aadtPass)})
+        + (${avgVehicleOccupancySingl} * ris_aadt_singl)
+        + (${avgVehicleOccupancyCombi} * ris_aadt_combi)
+      ) / NULLIF(ris_aadt, 0)
+    )::DOUBLE PRECISION`,
+
+    avgVehicleOccupancyPassRis: avgVehicleOccupancyPass,
+    avgVehicleOccupancySinglRis: avgVehicleOccupancySingl,
+    avgVehicleOccupancyCombiRis: avgVehicleOccupancyCombi,
+    avgVehicleOccupancyTruckRis: toRisBased(avgVehicleOccupancyTruck)
   }
 );
 
@@ -131,9 +160,20 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
     col => `${alias2DbColsMappings[col]} AS "${col}"`
   );
 
+  const risMetadataRequested = columns.some(col => col.match(/ris/i));
+
+  const risBasedAadtView = risMetadataRequested
+    ? await getRisBasedAadtViewForNpmrdsYear(year)
+    : null;
+
+  const risJoinClause = risMetadataRequested
+    ? `LEFT OUTER JOIN ${risBasedAadtView} USING (tmc)`
+    : '';
+
   const sql = `
     SELECT ${selectClauseElems}
       FROM tmc_metadata_${year}
+        ${risJoinClause}
       WHERE (
         tmc = ANY($1)
       )
