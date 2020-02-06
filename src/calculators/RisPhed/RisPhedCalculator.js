@@ -1,27 +1,31 @@
 const PhedCalculator = require('../Phed/PhedCalculator');
 
-const { RIS_AADT } = require('../../enums/aadtSources');
-
 const RIS_PHED = 'RIS_PHED';
 
 class RisPhedCalculator extends PhedCalculator {
   constructor(calcConfigParams) {
     super(calcConfigParams);
 
-    if (this.aadtSource === RIS_AADT) {
-      this.vehClassDirAadtTypes = this.vehClassDirAadtTypes.map(aadtType =>
-        aadtType.replace(/Aadt/, 'RisAadt')
-      );
-      this.avgVehcleOccupancyTypes = this.avgVehcleOccupancyTypes.map(
-        aadtType => aadtType.replace(/$/, 'Ris')
-      );
-    }
+    this.vehClassDirAadtTypes = this.vehClassDirAadtTypes.map(aadtType =>
+      aadtType.replace(/Aadt/, 'RisAadt')
+    );
+    this.avgVehcleOccupancyTypes = this.avgVehcleOccupancyTypes.map(aadtType =>
+      aadtType.replace(/$/, 'Ris')
+    );
   }
 
   get requiredTmcMetadata() {
-    return super.requiredTmcMetadata.map(prop =>
-      prop === 'avgVehicleOccupancy' ? 'avgVehicleOccupancyRis' : prop
-    );
+    return super.requiredTmcMetadata.map(prop => {
+      if (prop === 'avgVehicleOccupancy') {
+        return 'avgVehicleOccupancyRis';
+      }
+
+      if (prop === 'directionalAadt') {
+        return 'directionalRisAadt';
+      }
+
+      return prop;
+    });
   }
 
   getDirAadtByVehClass(attrs) {
@@ -54,16 +58,5 @@ class RisPhedCalculator extends PhedCalculator {
 }
 
 RisPhedCalculator.measure = RIS_PHED;
-
-RisPhedCalculator.configDefaults = Object.assign(
-  {},
-  PhedCalculator.configDefaults,
-  { aadtSource: RIS_AADT }
-);
-RisPhedCalculator.configOptions = Object.assign(
-  {},
-  PhedCalculator.configOptions,
-  { aadtSource: [RIS_AADT] }
-);
 
 module.exports = RisPhedCalculator;

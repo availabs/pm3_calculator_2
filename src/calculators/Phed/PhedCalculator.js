@@ -6,8 +6,6 @@ const {
   getFractionOfDailyAadtByDowByTimeBin
 } = require('../../storage/daos/TrafficDistributionProfilesDao');
 
-const { NPMRDS_AADT } = require('../../enums/aadtSources');
-
 const {
   AVAIL,
   CATTLAB
@@ -209,8 +207,6 @@ class PhedCalculator {
     this.year = calcConfigParams.year;
     this.meanType = calcConfigParams.meanType;
     this.timeBinSize = calcConfigParams.timeBinSize;
-    this.aadtSource = calcConfigParams.aadtSource;
-
     this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
       this
     );
@@ -268,8 +264,6 @@ class PhedCalculator {
       const vehClass =
         vehClassDirAadtType.replace(/directionalAadt/, '').toLowerCase() ||
         'all';
-
-      // console.log(vehClassDirAadtType, vehClass, attrs[vehClassDirAadtType]);
 
       acc[vehClass] = attrs[vehClassDirAadtType];
       return acc;
@@ -466,7 +460,6 @@ PhedCalculator.measure = PHED;
 PhedCalculator.configDefaults = {
   meanType: ARITHMETIC,
   npmrdsDataSource: ALL,
-  aadtSource: NPMRDS_AADT,
   npmrdsMetric: TRAVEL_TIME,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
   trafficDistributionTimeBinSize: 60,
@@ -476,7 +469,6 @@ PhedCalculator.configDefaults = {
 PhedCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
-  aadtSource: [NPMRDS_AADT],
   npmrdsMetric: [TRAVEL_TIME, SPEED],
   timePeriodSpec: timePeriodSpecNames,
   trafficDistributionTimeBinSize: [5, 15, 60],
