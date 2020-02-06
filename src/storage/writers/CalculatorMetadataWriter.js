@@ -45,6 +45,7 @@ class MetadataWriter {
     outputTimestamp,
     calculatorInstanceOuputFileNames,
     tmcMetadataFileName,
+    risMetadataFileName,
     authoritativeVersionCandidacyDisqualifications
   }) {
     this.timestamp = outputTimestamp;
@@ -62,6 +63,7 @@ class MetadataWriter {
     );
 
     this.tmcMetadataFileName = tmcMetadataFileName;
+    this.risMetadataFileName = risMetadataFileName;
 
     this.authoritativeVersionCandidacyDisqualifications = authoritativeVersionCandidacyDisqualifications;
   }
@@ -91,6 +93,10 @@ class MetadataWriter {
 
     if (this.tmcMetadataFileName) {
       metadata.tmcMetadataFileName = this.tmcMetadataFileName;
+    }
+
+    if (this.risMetadataFileName) {
+      metadata.risMetadataFileName = this.risMetadataFileName;
     }
 
     if (this.authoritativeVersionCandidacyDisqualifications) {

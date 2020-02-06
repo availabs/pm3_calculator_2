@@ -5,7 +5,7 @@
 const { isAbsolute, join } = require('path');
 const { existsSync, readFileSync, createReadStream } = require('fs');
 
-const { cloneDeep, omit } = require('lodash');
+const _ = require('lodash');
 const split2 = require('split2');
 const through2 = require('through2');
 const copyFrom = require('pg-copy-streams').from;
@@ -70,7 +70,7 @@ if (calculatorMetadata.calculatorSettings.outputFormat !== EAV) {
 const { calculators: pm3MeasureCalculatorsMetadata } = calculatorMetadata;
 
 const insertPM3CalculatorMetadata = async () => {
-  const metadata = cloneDeep(calculatorMetadata);
+  const metadata = _.cloneDeep(calculatorMetadata);
   metadata.calculators.forEach(cMeta => {
     /* eslint-disable-next-line no-param-reassign */
     delete cMeta.outputFileName;
@@ -106,7 +106,7 @@ const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
         rows: [{ id }]
       } = await client.query(
         'INSERT INTO public.pm3_measure_calculator_metadata (pm3calc_id, metadata) VALUES ($1, $2) RETURNING id',
-        [pm3calc_id, omit(metadata, 'outputFileName')]
+        [pm3calc_id, _.omit(metadata, 'outputFileName')]
       );
 
       pm3meacalc_ids.push(id);
@@ -123,18 +123,18 @@ const insertPM3MeasureCalculatorsMetadata = async pm3calc_id => {
   }
 };
 
-const loadTmcMetadata = async (pm3calc_id, tmcMetadataFileName) => {
-  if (!tmcMetadataFileName) {
+const loadMetadata = async (metadataType, pm3calc_id, metadataFileName) => {
+  if (!metadataFileName) {
     return;
   }
 
-  const outputFilePath = join(calculatorOutputDir, tmcMetadataFileName);
+  const outputFilePath = join(calculatorOutputDir, metadataFileName);
 
   if (existsSync(outputFilePath)) {
     const client = await DBService.pool.connect();
 
     const pseudoMetadata = {
-      measure: 'TMC_METADATA',
+      measure: metadataType,
       year: calculatorMetadata.calculatorSettings.year,
       isCanonical: true
     };
@@ -154,7 +154,7 @@ const loadTmcMetadata = async (pm3calc_id, tmcMetadataFileName) => {
           .pipe(
             through2.obj(function ndjsonTransformer(
               { tmc, attribute, value },
-              _,
+              $,
               cb
             ) {
               const v = typeof value === 'string' ? `"""${value}"""` : value;
@@ -190,6 +190,9 @@ const loadTmcMetadata = async (pm3calc_id, tmcMetadataFileName) => {
   }
 };
 
+const loadTmcMetadata = loadMetadata.bind(null, 'TMC_METADATA');
+const loadRisMetadata = loadMetadata.bind(null, 'RIS_METADATA');
+
 const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
   Promise.all(
     pm3meacalc_ids.map(async (pm3meacalc_id, i) => {
@@ -208,7 +211,7 @@ const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
               .pipe(
                 through2.obj(function ndjsonTransformer(
                   { tmc, attribute, value },
-                  _,
+                  $,
                   cb
                 ) {
                   const v =
@@ -250,15 +253,21 @@ const loadCalculatorsEAVOutput = async pm3meacalc_ids =>
   let pm3calc_id;
   let pm3meacalc_ids;
 
-  const { tmcMetadataFileName } = calculatorMetadata;
+  const { tmcMetadataFileName, risMetadataFileName } = calculatorMetadata;
 
   try {
     pm3calc_id = await insertPM3CalculatorMetadata();
     pm3meacalc_ids = await insertPM3MeasureCalculatorsMetadata(pm3calc_id);
 
     await loadTmcMetadata(pm3calc_id, tmcMetadataFileName);
+
+    if (!_.isEmpty(risMetadataFileName)) {
+      await loadRisMetadata(pm3calc_id, risMetadataFileName);
+    }
+
     await loadCalculatorsEAVOutput(pm3meacalc_ids);
   } catch (err) {
+    // Clean up failed load. DELETE cascades.
     await deletePM3CalculatorMetadata(pm3calc_id);
     console.error(err.message);
   } finally {

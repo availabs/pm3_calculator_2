@@ -17,35 +17,21 @@ const transformStreamCreators = {
   [CSV]: createCSVTransformStream
 };
 
-const hpmsRequiredTmcMetadata = [
-  'direction',
-  'directionalAadt',
-  'fSystem',
-  'faciltype',
-  'miles',
-  'nhs',
-  'nhsPct',
-  'state',
-  'stateCode',
-  'uaCode'
-];
-
-const getRequiredTmcMetadata = ({
+const getRequiredRisMetadata = ({
   outputCalculatorsRequiredMetadata,
-  outputHPMSRequiredTmcMetadata,
   calculators
 }) => {
-  const loggedTmcMetadataLists = [];
+  const loggedRisMetadataLists = [];
 
   if (outputCalculatorsRequiredMetadata && Array.isArray(calculators)) {
-    loggedTmcMetadataLists.push(
+    loggedRisMetadataLists.push(
       ...calculators.reduce((acc, { requiredTmcMetadata }) => {
-        const nonRisMetadata = _.isEmpty(requiredTmcMetadata)
+        const risMetadata = _.isEmpty(requiredTmcMetadata)
           ? null
-          : requiredTmcMetadata.filter(f => !f.match(/ris/i));
+          : requiredTmcMetadata.filter(f => f.match(/ris/i));
 
-        if (!_.isEmpty(nonRisMetadata)) {
-          acc.push(...nonRisMetadata);
+        if (!_.isEmpty(risMetadata)) {
+          acc.push(...risMetadata);
         }
 
         return acc;
@@ -53,13 +39,9 @@ const getRequiredTmcMetadata = ({
     );
   }
 
-  if (outputHPMSRequiredTmcMetadata) {
-    loggedTmcMetadataLists.push(hpmsRequiredTmcMetadata);
-  }
+  const loggedRisMetadata = union(loggedRisMetadataLists);
 
-  const loggedTmcMetadata = union(loggedTmcMetadataLists);
-
-  return loggedTmcMetadata.length ? loggedTmcMetadata : null;
+  return loggedRisMetadata.length ? loggedRisMetadata : null;
 };
 
 function eavFormatter(output) {
@@ -70,7 +52,7 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: 'TMC_METADATA'
+    measure: 'RIS_METADATA'
   };
 
   const formatted = [];
@@ -106,12 +88,11 @@ const getOutputStream = ({
   return stream;
 };
 
-class TmcMetadataWriter {
+class RisMetadataWriter {
   constructor({
     calculatorSettings: {
       year,
       outputCalculatorsRequiredMetadata,
-      outputHPMSRequiredTmcMetadata,
       outputFormat,
       outputFileFormat
     },
@@ -119,20 +100,19 @@ class TmcMetadataWriter {
   }) {
     this.year = year;
 
-    this.requiredTmcMetadata = getRequiredTmcMetadata({
+    this.requiredTmcMetadata = getRequiredRisMetadata({
       outputCalculatorsRequiredMetadata,
-      outputHPMSRequiredTmcMetadata,
       calculators
     });
 
-    this.isActive = !!this.requiredTmcMetadata;
+    this.isActive = !_.isEmpty(this.requiredTmcMetadata);
 
     if (this.isActive) {
       this.outputFormatter = outputFormatters[outputFormat].bind(this);
 
       this.outputFileFormat = outputFileFormat;
 
-      this.fileName = `tmc_metadata.${_.lowerCase(this.outputFileFormat)}`;
+      this.fileName = `ris_metadata.${_.lowerCase(this.outputFileFormat)}`;
 
       // The OutputWriter needs this class' requiredTmcMetadata in its constructor, syncronously.
       // This class needs the OutputWriter's outputDirPath to create the outputStream,
@@ -161,9 +141,9 @@ class TmcMetadataWriter {
     if (this.isActive) {
       await this.ready;
 
-      const npmrdsAttrs = _.pick(attrs, this.requiredTmcMetadata);
+      const risAttrs = _.pick(attrs, this.requiredTmcMetadata);
 
-      const d = this.outputFormatter(npmrdsAttrs);
+      const d = this.outputFormatter(risAttrs);
       const rows = (Array.isArray(d) ? d : [d]).filter(r => r);
 
       if (!rows.length) {
@@ -185,4 +165,4 @@ class TmcMetadataWriter {
   }
 }
 
-module.exports = TmcMetadataWriter;
+module.exports = RisMetadataWriter;

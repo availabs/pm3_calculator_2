@@ -2,7 +2,7 @@
 
 const CalculatorsOutputWriter = require('./CalculatorsOutputWriter');
 const CalculatorMetadataWriter = require('./CalculatorMetadataWriter');
-const TmcMetadataWriter = require('./TmcMetadataWriter');
+const CombinedMetadataWriter = require('./CombinedMetadataWriter');
 
 const getAuthoritativeVersionCandidacyDisqualifications = require('../../utils/getAuthoritativeVersionCandidacyDisqualifications');
 
@@ -31,7 +31,7 @@ async function initialize() {
   this.calculatorsOutputWriter = new CalculatorsOutputWriter(this);
   this.calculatorInstanceOuputFileNames = this.calculatorsOutputWriter.calculatorInstanceOuputFileNames;
 
-  this.tmcMetadataWriter.setOutputDirPath(this.outputDirPath);
+  this.combinedMetadataWriter.setOutputDirPath(this.outputDirPath);
 
   this.authoritativeVersionCandidacyDisqualifications = await getAuthoritativeVersionCandidacyDisqualifications(
     this
@@ -49,10 +49,12 @@ class OutputWriter {
 
     this.outputFileFormat = calculatorSettings.outputFileFormat;
 
-    this.tmcMetadataWriter = new TmcMetadataWriter(this);
-    this.tmcMetadataFileName = this.tmcMetadataWriter.fileName;
+    this.combinedMetadataWriter = new CombinedMetadataWriter(this);
 
-    this.requiredTmcMetadata = this.tmcMetadataWriter.requiredTmcMetadata;
+    this.tmcMetadataFileName = this.combinedMetadataWriter.tmcMetadataFileName;
+    this.risMetadataFileName = this.combinedMetadataWriter.risMetadataFileName;
+
+    this.requiredTmcMetadata = this.combinedMetadataWriter.requiredTmcMetadata;
 
     this.ready = initialize.call(this);
   }
@@ -60,7 +62,7 @@ class OutputWriter {
   async writeTmcData({ attrs, calculatorsOutput }) {
     await this.ready;
     await Promise.all([
-      this.tmcMetadataWriter.write(attrs),
+      this.combinedMetadataWriter.write(attrs),
       this.calculatorsOutputWriter.write(calculatorsOutput)
     ]);
   }
@@ -71,7 +73,7 @@ class OutputWriter {
   }
 
   async end() {
-    await this.tmcMetadataWriter.end();
+    await this.combinedMetadataWriter.end();
     await this.calculatorsOutputWriter.end();
   }
 }
