@@ -54,7 +54,7 @@ const getRequiredTmcMetadata = ({
   }
 
   if (outputHPMSRequiredTmcMetadata) {
-    loggedTmcMetadataLists.push(hpmsRequiredTmcMetadata);
+    loggedTmcMetadataLists.push(...hpmsRequiredTmcMetadata);
   }
 
   const loggedTmcMetadata = union(loggedTmcMetadataLists);
