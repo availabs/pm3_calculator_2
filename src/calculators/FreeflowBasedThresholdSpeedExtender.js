@@ -1,4 +1,4 @@
-const FreeflowCalculator = require('./Freeflow');
+const { FreeflowCalculator } = require('./Freeflow');
 
 const { union } = require('../utils/SetUtils');
 

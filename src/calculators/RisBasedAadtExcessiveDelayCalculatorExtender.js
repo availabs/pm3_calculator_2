@@ -17,7 +17,8 @@ class RisBasedAadtExcessiveDelayCalculatorExtender {
 
       get requiredTmcMetadata() {
         const reqMetadata = super.requiredTmcMetadata.map(prop =>
-          prop.match(/avgVehicleOccupancy|directionalAadt/)
+          prop.match(/avgVehicleOccupancy|directionalAadt/) &&
+          !prop.match(/Ris$/)
             ? `${prop}Ris`
             : prop
         );
