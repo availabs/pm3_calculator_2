@@ -1,23 +1,19 @@
 /* eslint import/no-dynamic-require: 0, global-require: 0 */
 
+const _ = require('lodash');
+
 const impls = [
-  require('./Lottr/LottrCalculator'),
-  require('./PercentBinsReporting/PercentBinsReportingCalculator'),
-  require('./Phed/PhedCalculator'),
-  require('./PhedFreeflow/PhedFreeflowCalculator'),
-  require('./SummaryStatistics/SummaryStatisticsCalculator'),
-  require('./RisPhed/RisPhedCalculator'),
-  require('./RisTed/RisTedCalculator'),
-  require('./RisPhedFreeflow/RisPhedFreeflowCalculator'),
-  require('./RisTedFreeflow/RisTedFreeflowCalculator'),
-  require('./Ted/TedCalculator'),
-  require('./TedFreeflow/TedFreeflowCalculator'),
-  require('./TrafficDistributionFactors/TrafficDistributionFactorsCalculator'),
-  require('./Tttr/TttrCalculator'),
-  require('./Freeflow/FreeflowCalculator'),
-  require('./TravelTimeIndexCalculator/TravelTimeIndexCalculator'),
-  require('./PlanningTimeIndexCalculator/PlanningTimeIndexCalculator'),
-  require('./SpeedPercentiles/SpeedPercentilesCalculator')
+  ..._.values(require('./Lottr')),
+  ..._.values(require('./PercentBinsReporting')),
+  ..._.values(require('./Phed')),
+  ..._.values(require('./SummaryStatistics')),
+  ..._.values(require('./Ted')),
+  ..._.values(require('./TrafficDistributionFactors')),
+  ..._.values(require('./Tttr')),
+  ..._.values(require('./Freeflow')),
+  ..._.values(require('./TravelTimeIndexCalculator')),
+  ..._.values(require('./PlanningTimeIndexCalculator')),
+  ..._.values(require('./SpeedPercentiles'))
 ];
 
 const metadata = impls.reduce(

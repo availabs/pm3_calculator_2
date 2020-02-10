@@ -36,7 +36,6 @@ const { TRAVEL_TIME, SPEED } = require('../../enums/npmrdsMetrics');
 
 const {
   numbersComparator,
-  precisionRound,
   toInteger
 } = require('../../utils/MathUtils');
 

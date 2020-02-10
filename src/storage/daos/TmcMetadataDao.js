@@ -42,9 +42,9 @@ const tmcMetadataTableColumnNames = [
   'aadt',
   'aadt_singl',
   'aadt_combi',
-  'ris_aadt',
-  'ris_aadt_singl',
-  'ris_aadt_combi',
+  'aadt_ris',
+  'aadt_singl_ris',
+  'aadt_combi_ris',
   'nhs',
   'nhs_pct',
   'strhnt_typ',
@@ -93,11 +93,14 @@ const avgVehicleOccupancyTruck = `(
   ) / NULLIF(aadt_singl + aadt_combi, 0)
 )`;
 
-const toRisBased = str => {
+const toRisBasedAadt = str => {
   return str
-    .replace(/\baadt\b/g, 'ris_aadt')
-    .replace(/aadt_/g, 'ris_aadt_')
-    .replace(/Aadt/, 'RisAadt');
+    .replace(/aadt\b/g, 'aadt_ris')
+    .replace(/aadt_singl/g, 'aadt_singl_ris')
+    .replace(/aadt_combi/g, 'aadt_combi_ris')
+    .replace(/Aadt\b/, 'AadtRis')
+    .replace(/AadtSingl/, 'AadtSinglRis')
+    .replace(/AadtCombi/, 'AadtCombiRis');
 };
 
 const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
@@ -122,26 +125,26 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
     avgVehicleOccupancyCombi,
     avgVehicleOccupancyTruck,
 
-    risAadtTruck: toRisBased(aadtTruck),
-    risAadtPass: toRisBased(aadtPass),
-    directionalRisAadt: toRisBased(directionalAadt),
-    directionalRisAadtSingl: toRisBased(directionalAadtSingl),
-    directionalRisAadtCombi: toRisBased(directionalAadtCombi),
-    directionalRisAadtTruck: toRisBased(directionalAadtTruck),
-    directionalRisAadtPass: toRisBased(directionalAadtPass),
+    risAadtTruck: toRisBasedAadt(aadtTruck),
+    risAadtPass: toRisBasedAadt(aadtPass),
+    directionalAadtRis: toRisBasedAadt(directionalAadt),
+    directionalAadtSinglRis: toRisBasedAadt(directionalAadtSingl),
+    directionalAadtCombiRis: toRisBasedAadt(directionalAadtCombi),
+    directionalAadtTruckRis: toRisBasedAadt(directionalAadtTruck),
+    directionalAadtPassRis: toRisBasedAadt(directionalAadtPass),
 
-    avgVehicleOccupancyRis: `(
+    avgVehicleOccupancyRis: toRisBasedAadt(`(
       (
-        (${avgVehicleOccupancyPass} * ${toRisBased(aadtPass)})
-        + (${avgVehicleOccupancySingl} * ris_aadt_singl)
-        + (${avgVehicleOccupancyCombi} * ris_aadt_combi)
-      ) / NULLIF(ris_aadt, 0)
-    )::DOUBLE PRECISION`,
+        (${avgVehicleOccupancyPass} * ${aadtPass})
+        + (${avgVehicleOccupancySingl} * aadt_singl)
+        + (${avgVehicleOccupancyCombi} * aadt_combi)
+      ) / NULLIF(aadt_ris, 0)
+    )::DOUBLE PRECISION`),
 
     avgVehicleOccupancyPassRis: avgVehicleOccupancyPass,
     avgVehicleOccupancySinglRis: avgVehicleOccupancySingl,
     avgVehicleOccupancyCombiRis: avgVehicleOccupancyCombi,
-    avgVehicleOccupancyTruckRis: toRisBased(avgVehicleOccupancyTruck)
+    avgVehicleOccupancyTruckRis: toRisBasedAadt(avgVehicleOccupancyTruck)
   }
 );
 
