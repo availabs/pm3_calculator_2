@@ -113,9 +113,25 @@ const getXDelayHrs = (tmcCalcCtx, metricValue) => {
   return Math.max(xdelayHrs, 0);
 };
 
+const aadtMonthAdjFactors = [
+  null,
+  0.94,
+  0.88,
+  1.01,
+  1.01,
+  1.05,
+  1.04,
+  1.05,
+  1.08,
+  0.99,
+  1.04,
+  0.95,
+  0.97
+];
+
 const getXDelayVehHrsByVehClass = (
   tmcCalcCtx,
-  { dow, timeBinNum, xdelayHrs }
+  { dow, month, timeBinNum, xdelayHrs }
 ) => {
   const {
     roundTravelTimes,
@@ -126,10 +142,12 @@ const getXDelayVehHrsByVehClass = (
   const fractionOfDailyAadt =
     fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
 
+  const monthAdjFactor = aadtMonthAdjFactors[month];
+
   const xdelayVehHrsByVehClass = mapValues(dirAadtByVehClass, dirAadt => {
     const trafficVol = roundTravelTimes
-      ? precisionRound(dirAadt * fractionOfDailyAadt, 1)
-      : dirAadt * fractionOfDailyAadt;
+      ? precisionRound(dirAadt * fractionOfDailyAadt * monthAdjFactor, 1)
+      : dirAadt * fractionOfDailyAadt * monthAdjFactor;
 
     return xdelayHrs * trafficVol;
   });
@@ -369,7 +387,7 @@ class PhedCalculator {
       const timePeriod = this.timePeriodIdentifier(row);
 
       if (timePeriod) {
-        const { [npmrdsDataKey]: metricValue, dow, timeBinNum } = row;
+        const { [npmrdsDataKey]: metricValue, dow, month, timeBinNum } = row;
 
         const xdelayHrs = getXDelayHrs(tmcCalcCtx, metricValue);
 
@@ -379,6 +397,7 @@ class PhedCalculator {
 
         const xdelayVehHrsByVehClass = getXDelayVehHrsByVehClass(tmcCalcCtx, {
           dow,
+          month,
           timeBinNum,
           xdelayHrs
         });

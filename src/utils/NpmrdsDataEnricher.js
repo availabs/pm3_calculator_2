@@ -1,3 +1,4 @@
+const assert = require('assert');
 const {
   buildTimeBinNum2HourTable,
   buildDate2DowTableForYear
@@ -17,7 +18,13 @@ class NpmrdsDataEnricher {
       const { date, timeBinNum } = row;
 
       row.hour = timeBinNum2Hour[timeBinNum];
+      assert(row.dow >= 0 && row.dow <= 23);
+
       row.dow = date2Dow[date];
+      assert(row.dow >= 0 && row.dow <= 6);
+
+      row.month = +date.split('-')[1];
+      assert(row.month >= 1 && row.month <= 12);
     }
   }
 }
