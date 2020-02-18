@@ -294,7 +294,7 @@ class PhedCalculator {
 
   get requiredTmcMetadata() {
     return union(
-      ['functionalClass', 'avgVehicleOccupancy'],
+      ['functionalClass', 'avgVehicleOccupancy', 'isprimary'],
       this.vehClassDirAadtTypes,
       this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
       this.thresholdSpeedCalculator.requiredTmcMetadata
