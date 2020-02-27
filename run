@@ -30,8 +30,13 @@ if (!process.env.CALCULATOR_CONCURRENCY) {
   require('./src/loadEnvFile');
 }
 
-// const limit = pLimit(process.env.CALCULATOR_CONCURRENCY || 10);
-const limit = pLimit(10);
+const calculator_concurrency = Number.isFinite(
+  +process.env.CALCULATOR_CONCURRENCY
+)
+  ? +process.env.CALCULATOR_CONCURRENCY
+  : 10;
+
+const limit = pLimit(calculator_concurrency);
 
 (async () => {
   try {

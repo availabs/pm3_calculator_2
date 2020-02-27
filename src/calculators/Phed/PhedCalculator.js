@@ -3,7 +3,7 @@ const assert = require('assert');
 const _ = require('lodash');
 
 const {
-  getFractionOfDailyAadtByDowByTimeBin
+  getFractionOfDailyAadtByMonthByDowByTimeBin
 } = require('../../storage/daos/TrafficDistributionProfilesDao');
 
 const {
@@ -90,16 +90,16 @@ const getXDelayHrs = (tmcCalcCtx, metricValue) => {
 
 const getXDelayVehHrsByVehClass = (
   tmcCalcCtx,
-  { dow, timeBinNum, xdelayHrs }
+  { dow, month, timeBinNum, xdelayHrs }
 ) => {
   const {
     roundTravelTimes,
     dirAadtByVehClass,
-    fractionOfDailyAadtByDowByTimeBin
+    fractionOfDailyAadtByMonthByDowByTimeBin
   } = tmcCalcCtx;
 
   const fractionOfDailyAadt =
-    fractionOfDailyAadtByDowByTimeBin[dow][timeBinNum];
+    fractionOfDailyAadtByMonthByDowByTimeBin[month][dow][timeBinNum];
 
   const xdelayVehHrsByVehClass = _.mapValues(dirAadtByVehClass, dirAadt => {
     const trafficVol = roundTravelTimes
@@ -252,7 +252,7 @@ class PhedCalculator {
 
   get requiredTmcMetadata() {
     return union(
-      ['functionalClass', 'isprimary', 'avgVehicleOccupancy'],
+      ['functionalClass', 'avgVehicleOccupancy', 'isprimary'],
       this.vehClassDirAadtTypes,
       this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
       this.thresholdSpeedCalculator.requiredTmcMetadata
@@ -320,7 +320,7 @@ class PhedCalculator {
       attrs
     });
 
-    const fractionOfDailyAadtByDowByTimeBin = await getFractionOfDailyAadtByDowByTimeBin(
+    const fractionOfDailyAadtByMonthByDowByTimeBin = await getFractionOfDailyAadtByMonthByDowByTimeBin(
       {
         functionalClass,
         congestionLevel,
@@ -330,6 +330,9 @@ class PhedCalculator {
         timeBinSize
       }
     );
+
+    assert(Array.isArray(fractionOfDailyAadtByMonthByDowByTimeBin));
+    assert(fractionOfDailyAadtByMonthByDowByTimeBin.length === 12);
 
     const thresholdSpeed = await this.thresholdSpeedCalculator.calculateThresholdSpeed(
       { data, attrs }
@@ -347,7 +350,7 @@ class PhedCalculator {
       miles,
       thresholdTravelTimeSec,
       dirAadtByVehClass,
-      fractionOfDailyAadtByDowByTimeBin,
+      fractionOfDailyAadtByMonthByDowByTimeBin,
       vehicleClasses,
       avgVehicleOccupancyByVehClass,
       timePeriods
@@ -371,7 +374,7 @@ class PhedCalculator {
       const timePeriod = this.timePeriodIdentifier(row);
 
       if (timePeriod) {
-        const { [npmrdsDataKey]: metricValue, dow, timeBinNum } = row;
+        const { [npmrdsDataKey]: metricValue, month, dow, timeBinNum } = row;
 
         const xdelayHrs = getXDelayHrs(tmcCalcCtx, metricValue);
 
@@ -381,6 +384,7 @@ class PhedCalculator {
 
         const xdelayVehHrsByVehClass = getXDelayVehHrsByVehClass(tmcCalcCtx, {
           dow,
+          month,
           timeBinNum,
           xdelayHrs
         });

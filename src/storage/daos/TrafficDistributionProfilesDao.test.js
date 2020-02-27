@@ -1,10 +1,11 @@
 const { chain, size, sum, uniq } = require('lodash');
 const { cartesianProduct } = require('../../utils/SetUtils');
 
+const TrafficDistributionMonthAdjustmentFactors = require('../static/TrafficDistributionMonthAdjustmentFactors');
 const TrafficDistributionDowAdjustmentFactors = require('../static/TrafficDistributionDowAdjustmentFactors');
 
 const {
-  getFractionOfDailyAadtByDowByTimeBin
+  getFractionOfDailyAadtByMonthByDowByTimeBin
 } = require('./TrafficDistributionProfilesDao');
 
 const functionalClasses = Object.keys(require('../../enums/functionalClasses'));
@@ -18,6 +19,7 @@ const trafficDistributionTimeBinSizes = [5, 15, 60];
 const timeBinSizes = [5, 15, 60];
 
 const CLOSENESS_PRECISION = 10;
+const MONTHS_IN_YEAR = 12;
 const DAYS_IN_WEEK = 7;
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -43,7 +45,7 @@ describe.each(paramCombos)(
     test(`fractions sum to dow adj factors`, async done => {
       const timeBinsInDay = MINUTES_IN_DAY / timeBinSize;
 
-      const fractionOfDailyAadtByDowByTimeBin = await getFractionOfDailyAadtByDowByTimeBin(
+      const fractionOfDailyAadtByMonthByDowByTimeBin = await getFractionOfDailyAadtByMonthByDowByTimeBin(
         {
           functionalClass,
           congestionLevel,
@@ -54,44 +56,75 @@ describe.each(paramCombos)(
         }
       );
 
-      // One fractionOfDailyAadtByTimeBin for each day of the week.
-      expect(fractionOfDailyAadtByDowByTimeBin.length).toEqual(DAYS_IN_WEEK);
-
-      // One fractionOfDailyAadt for each time bin
-      fractionOfDailyAadtByDowByTimeBin.forEach(fractionOfDailyAadtByTimeBin =>
-        expect(fractionOfDailyAadtByTimeBin.length).toEqual(timeBinsInDay)
+      // One fractionOfDailyAadtByTimeBin for each month;
+      expect(fractionOfDailyAadtByMonthByDowByTimeBin.length).toEqual(
+        MONTHS_IN_YEAR
       );
 
-      // When the trafficDistributionTimeBinSize is greater than the timeBinSize timeBins
-      // within the same trafficDistributionTimeBin should have the same fraction of AADT.
+      // One fractionOfDailyAadtByTimeBin for each day of week for each month;
+      fractionOfDailyAadtByMonthByDowByTimeBin.forEach(
+        fractionOfDailyAadtByDowByTimeBin =>
+          expect(fractionOfDailyAadtByDowByTimeBin.length).toEqual(DAYS_IN_WEEK)
+      );
+
+      // One fraction of AADT for each day of week for each month for each time bin.
+      fractionOfDailyAadtByMonthByDowByTimeBin.forEach(
+        fractionOfDailyAadtByDowByTimeBin =>
+          fractionOfDailyAadtByDowByTimeBin.forEach(
+            fractionOfDailyAadtByTimeBin =>
+              expect(fractionOfDailyAadtByTimeBin.length).toEqual(timeBinsInDay)
+          )
+      );
+
+      // When the trafficDistributionTimeBinSize is greater than the timeBinSize,
+      //   timeBins within the same trafficDistributionTimeBin should have
+      //   the same fraction of AADT.
       if (trafficDistributionTimeBinSize > timeBinSize) {
         const chunkSize = Math.floor(
           trafficDistributionTimeBinSize / timeBinSize
         );
 
-        fractionOfDailyAadtByDowByTimeBin.forEach(
-          fractionOfDailyAadtByTimeBin => {
-            const uniqChunkFractionsCount = chain(fractionOfDailyAadtByTimeBin)
-              .chunk(chunkSize)
-              .map(uniq) // unique values per chunk
-              .map(size) // the count of unique values per chunk
-              .uniq() // Unique counts of unique values per chunk
-              .value();
+        fractionOfDailyAadtByMonthByDowByTimeBin.forEach(
+          fractionOfDailyAadtByDowByTimeBin =>
+            fractionOfDailyAadtByDowByTimeBin.forEach(
+              fractionOfDailyAadtByTimeBin => {
+                const uniqChunkFractionsCount = chain(
+                  fractionOfDailyAadtByTimeBin
+                )
+                  .chunk(chunkSize)
+                  .map(uniq) // unique values per chunk
+                  .map(size) // the count of unique values per chunk
+                  .uniq() // Unique counts of unique values per chunk
+                  .value();
 
-            // Within chunks, all timeBins have the same fraction of AADT
-            expect(uniqChunkFractionsCount.length).toBe(1);
-          }
+                // Within chunks, all timeBins have the same fraction of AADT
+                expect(uniqChunkFractionsCount.length).toBe(1);
+              }
+            )
         );
       }
 
       // For each day of the week, the fractionOfDailyAadt per time bin should
       // sum to the day of week's share of weekly traffic (DOW Adjustment Factor).
-      fractionOfDailyAadtByDowByTimeBin.forEach(
-        (fractionOfDailyAadtByTimeBin, dow) =>
-          expect(sum(fractionOfDailyAadtByTimeBin)).toBeCloseTo(
-            TrafficDistributionDowAdjustmentFactors[dow],
-            CLOSENESS_PRECISION
-          )
+      fractionOfDailyAadtByMonthByDowByTimeBin.forEach(
+        (fractionOfDailyAadtByDowByTimeBin, month) => {
+          const monthAdjustmentFactor =
+            TrafficDistributionMonthAdjustmentFactors[month];
+
+          fractionOfDailyAadtByDowByTimeBin.forEach(
+            (fractionOfDailyAadtByTimeBin, dow) => {
+              const dowAdjustmentFactor =
+                TrafficDistributionDowAdjustmentFactors[dow];
+
+              const sumOfDailyAadtFractions = sum(fractionOfDailyAadtByTimeBin);
+
+              expect(sumOfDailyAadtFractions).toBeCloseTo(
+                monthAdjustmentFactor * dowAdjustmentFactor,
+                CLOSENESS_PRECISION
+              );
+            }
+          );
+        }
       );
 
       done();

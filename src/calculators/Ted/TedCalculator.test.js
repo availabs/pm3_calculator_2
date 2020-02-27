@@ -24,6 +24,8 @@ const TMC = '104+04107';
 const YEAR = 2017;
 const TWO_AM_MINS = 120;
 const THREE_AM_MINS = 180;
+
+const MONTHS_PER_YEAR = 12;
 const DAYS_PER_WEEK = 7;
 
 const CLOSENESS_PRECISION = 9;
@@ -168,6 +170,7 @@ const generateMockData = ({ timeBinSize, tmc }) => {
         timeBinNum = THREE_AM_MINS / timeBinSize;
       }
 
+      const curMonth = curTime.getMonth();
       const curDow = curTime.getDay();
       const curHour = curTime.getHours();
 
@@ -175,6 +178,7 @@ const generateMockData = ({ timeBinSize, tmc }) => {
         tmc,
         date,
         timeBinNum,
+        month: curMonth,
         dow: curDow,
         hour: curHour
       });
@@ -187,15 +191,21 @@ const generateMockData = ({ timeBinSize, tmc }) => {
 const generateMockTrafficDistProfile = timeBinSize => {
   const binsPerDay = getNumBinsInDayForTimeBinSize(timeBinSize);
 
-  return range(DAYS_PER_WEEK).reduce((dAcc, dow) => {
-    const randomRatios = range(binsPerDay).map(() => Math.random());
-    const sumOfRatios = sum(randomRatios);
-    const mockFractionsOfDailyAadt = randomRatios.map(r => r / sumOfRatios);
+  return range(MONTHS_PER_YEAR).reduce(mAcc => {
+    mAcc.push(
+      range(DAYS_PER_WEEK).reduce(dAcc => {
+        const randomRatios = range(binsPerDay).map(() => Math.random());
+        const sumOfRatios = sum(randomRatios);
+        const mockFractionsOfDailyAadt = randomRatios.map(r => r / sumOfRatios);
 
-    dAcc[dow] = mockFractionsOfDailyAadt;
+        dAcc.push(mockFractionsOfDailyAadt);
 
-    return dAcc;
-  }, {});
+        return dAcc;
+      }, [])
+    );
+
+    return mAcc;
+  }, []);
 };
 
 describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
@@ -212,7 +222,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     const mockTrafficDistProfile = generateMockTrafficDistProfile(timeBinSize);
 
     jest.doMock('../../storage/daos/TrafficDistributionProfilesDao', () => ({
-      getFractionOfDailyAadtByDowByTimeBin: jest.fn(
+      getFractionOfDailyAadtByMonthByDowByTimeBin: jest.fn(
         () => mockTrafficDistProfile
       )
     }));
@@ -239,7 +249,7 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
     let expectedXdelayVehHrs = 0;
 
     data.forEach(row => {
-      const { timeBinNum, dow } = row;
+      const { timeBinNum, month, dow } = row;
 
       if (Math.random() > 0.5) {
         const delaySecs = Math.random() * 1000;
@@ -255,7 +265,8 @@ describe.each(timeBinSizes)('Time Bin Size %d', timeBinSize => {
 
         expectedXdelayHrs += delayHrs;
 
-        const fractionOfDailyAadt = mockTrafficDistProfile[dow][timeBinNum];
+        const fractionOfDailyAadt =
+          mockTrafficDistProfile[month][dow][timeBinNum];
 
         const vehicleVolume = precisionRound(
           attrs.directionalAadt * fractionOfDailyAadt,

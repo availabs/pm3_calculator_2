@@ -7,10 +7,12 @@ const { WEEKEND, WEEKDAY } = require('../../enums/dayTypes');
 const AVAILTrafficDistributionProfiles = require('../static/AVAILTrafficDistributionProfiles');
 const CATTLabTrafficDistributionProfiles = require('../static/CATTLabTrafficDistributionProfiles');
 
-const TrafficDistributionDOWAdjFactors = require('../static/TrafficDistributionDowAdjustmentFactors');
+const TrafficDistributionMonthAdjustmentFactors = require('../static/TrafficDistributionMonthAdjustmentFactors');
+const TrafficDistributionDOWAdjustmentFactors = require('../static/TrafficDistributionDowAdjustmentFactors');
 
 const getTrafficDistributionProfileName = require('../../utils/getTrafficDistributionProfileName');
 
+const NUM_MONTHS_IN_YEAR = 12;
 const NUM_DAYS_IN_WEEK = 7;
 const MINUTES_PER_EPOCH = 5;
 
@@ -95,7 +97,7 @@ const getFractionOfDailyAadtForNpmrdsDataTimeBin = ({
 //   1st dimension has length = 7 (dows)
 //   2nd dimension has length = num npmrdsData timeBins in day
 //     Elements of the inner arrays are the fraction of daily aadt for that dow/timeBin
-const getFractionOfDailyAadtByDowByTimeBin = memoizeOne(
+const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
   async ({
     functionalClass,
     congestionLevel,
@@ -126,10 +128,13 @@ const getFractionOfDailyAadtByDowByTimeBin = memoizeOne(
 
     // Fraction of dailyAadt (aadt / 365) throughout the week's timebins
     const fractionOfDailyAadtByDowByTimeBin = cartesianProduct(
+      range(NUM_MONTHS_IN_YEAR),
       range(NUM_DAYS_IN_WEEK),
       range(numBinsInDay)
-    ).reduce((acc, [dow, timeBinNum]) => {
-      const dowAdjFactor = TrafficDistributionDOWAdjFactors[dow];
+    ).reduce((acc, [month, dow, timeBinNum]) => {
+      const monthAdjustmentFactor =
+        TrafficDistributionMonthAdjustmentFactors[month];
+      const dowAdjustmentFactor = TrafficDistributionDOWAdjustmentFactors[dow];
       const trafficDistributionProfile = profiles[dow % 6 ? WEEKDAY : WEEKEND];
 
       const fractionOfDailyAadtForNpmrdsDataTimeBin = getFractionOfDailyAadtForNpmrdsDataTimeBin(
@@ -141,9 +146,12 @@ const getFractionOfDailyAadtByDowByTimeBin = memoizeOne(
         }
       );
 
-      acc[dow] = acc[dow] || [];
-      acc[dow][timeBinNum] =
-        fractionOfDailyAadtForNpmrdsDataTimeBin * dowAdjFactor;
+      acc[month] = acc[month] || [];
+      acc[month][dow] = acc[month][dow] || [];
+      acc[month][dow][timeBinNum] =
+        fractionOfDailyAadtForNpmrdsDataTimeBin *
+        monthAdjustmentFactor *
+        dowAdjustmentFactor;
 
       return acc;
     }, []);
@@ -154,5 +162,5 @@ const getFractionOfDailyAadtByDowByTimeBin = memoizeOne(
 );
 
 module.exports = {
-  getFractionOfDailyAadtByDowByTimeBin
+  getFractionOfDailyAadtByMonthByDowByTimeBin
 };

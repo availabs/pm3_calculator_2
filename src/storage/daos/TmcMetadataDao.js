@@ -62,7 +62,7 @@ const tmcMetadataTableColumnNames = [
   'congestion_level',
   'directionality',
   'bounding_box',
-  'avg_vehicle_occupancy',
+  // 'avg_vehicle_occupancy'
   'state_code',
   'county_code',
   'isprimary'
@@ -82,9 +82,22 @@ const directionalAadtCombi = buildDirAadtClause('aadt_combi');
 const directionalAadtTruck = buildDirAadtClause(aadtTruck);
 const directionalAadtPass = buildDirAadtClause(aadtPass);
 
-const avgVehicleOccupancyPass = 1.55;
-const avgVehicleOccupancySingl = 10.25;
-const avgVehicleOccupancyCombi = 1.11;
+// const avgVehicleOccupancyPass = 1.55;
+// const avgVehicleOccupancySingl = 10.25;
+// const avgVehicleOccupancyCombi = 1.11;
+
+// From Keith Miller Spreadsheet
+const avgVehicleOccupancyPass = 1.7;
+const avgVehicleOccupancySingl = 16.8;
+const avgVehicleOccupancyCombi = 1;
+
+const avgVehicleOccupancy = `(
+  (
+    (${avgVehicleOccupancyPass} * ${aadtPass})
+    + (${avgVehicleOccupancySingl} * aadt_singl)
+    + (${avgVehicleOccupancyCombi} * aadt_combi)
+  ) / NULLIF(aadt, 0)
+)`;
 
 const avgVehicleOccupancyTruck = `(
   (
@@ -119,7 +132,7 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
     directionalAadtTruck,
     directionalAadtPass,
 
-    // avgVehicleOccupancy comes from tmc_metadata table
+    avgVehicleOccupancy,
     avgVehicleOccupancyPass,
     avgVehicleOccupancySingl,
     avgVehicleOccupancyCombi,
