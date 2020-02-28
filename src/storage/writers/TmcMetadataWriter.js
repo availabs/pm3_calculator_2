@@ -161,7 +161,7 @@ class TmcMetadataWriter {
     if (this.isActive) {
       await this.ready;
 
-      const npmrdsAttrs = _.pick(attrs, this.requiredTmcMetadata);
+      const npmrdsAttrs = _.pick(attrs, ['tmc', ...this.requiredTmcMetadata]);
 
       const d = this.outputFormatter(npmrdsAttrs);
       const rows = (Array.isArray(d) ? d : [d]).filter(r => r);

@@ -141,7 +141,7 @@ class RisMetadataWriter {
     if (this.isActive) {
       await this.ready;
 
-      const risAttrs = _.pick(attrs, this.requiredTmcMetadata);
+      const risAttrs = _.pick(attrs, ['tmc', ...this.requiredTmcMetadata]);
 
       const d = this.outputFormatter(risAttrs);
       const rows = (Array.isArray(d) ? d : [d]).filter(r => r);
