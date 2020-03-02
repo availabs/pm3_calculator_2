@@ -227,9 +227,9 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
         const row = rows[j];
 
         if (_.isNil(row[risCol])) {
-          console.warn(
-            `WARNING: Backfilling ${risCol} with ${npmrdsShpCol} for ${row.tmc}`
-          );
+          // console.warn(
+          // `WARNING: Backfilling ${risCol} with ${npmrdsShpCol} for ${row.tmc}`
+          // );
           row[risCol] = row[npmrdsShpCol];
         }
       }
