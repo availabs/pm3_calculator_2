@@ -88,7 +88,8 @@ const directionalAadtPass = buildDirAadtClause(aadtPass);
 
 // From Keith Miller Spreadsheet
 const avgVehicleOccupancyPass = 1.7;
-const avgVehicleOccupancySingl = 16.8;
+// const avgVehicleOccupancySingl = 16.8;
+const avgVehicleOccupancySingl = `(CASE ua_code WHEN '63217' THEN 16.8::NUMERIC ELSE 10.7::NUMERIC END)`;
 const avgVehicleOccupancyCombi = 1;
 
 const avgVehicleOccupancy = `(
