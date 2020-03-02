@@ -1,5 +1,5 @@
-/* eslint no-await-in-loop: 0 */
-const { camelCase } = require('lodash');
+/* eslint no-await-in-loop: 0, no-console: 0 */
+const _ = require('lodash');
 
 const { query } = require('../services/DBService');
 
@@ -98,15 +98,16 @@ const avgVehicleOccupancy = `(
     + (${avgVehicleOccupancySingl} * aadt_singl)
     + (${avgVehicleOccupancyCombi} * aadt_combi)
   ) / NULLIF(aadt, 0)
-)`;
+)::DOUBLE PRECISION`;
 
 const avgVehicleOccupancyTruck = `(
   (
     (${avgVehicleOccupancySingl} * aadt_singl)
     + (${avgVehicleOccupancyCombi} * aadt_combi)
   ) / NULLIF(aadt_singl + aadt_combi, 0)
-)`;
+)::DOUBLE PRECISION`;
 
+// WARNING: changes to this function may require changes to getMetadataForTmcs
 const toRisBasedAadt = str => {
   return str
     .replace(/aadt\b/g, 'aadt_ris')
@@ -119,7 +120,7 @@ const toRisBasedAadt = str => {
 
 const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
   (acc, col) => {
-    acc[camelCase(col)] = col;
+    acc[_.camelCase(col)] = col;
     return acc;
   },
   {
@@ -139,24 +140,17 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
     avgVehicleOccupancyCombi,
     avgVehicleOccupancyTruck,
 
-    risAadtTruck: toRisBasedAadt(aadtTruck),
-    risAadtPass: toRisBasedAadt(aadtPass),
+    aadtTruckRis: toRisBasedAadt(aadtTruck),
+    aadtPassRis: toRisBasedAadt(aadtPass),
     directionalAadtRis: toRisBasedAadt(directionalAadt),
     directionalAadtSinglRis: toRisBasedAadt(directionalAadtSingl),
     directionalAadtCombiRis: toRisBasedAadt(directionalAadtCombi),
     directionalAadtTruckRis: toRisBasedAadt(directionalAadtTruck),
     directionalAadtPassRis: toRisBasedAadt(directionalAadtPass),
 
-    avgVehicleOccupancyRis: toRisBasedAadt(`(
-      (
-        (${avgVehicleOccupancyPass} * ${aadtPass})
-        + (${avgVehicleOccupancySingl} * aadt_singl)
-        + (${avgVehicleOccupancyCombi} * aadt_combi)
-      ) / NULLIF(aadt_ris, 0)
-    )::DOUBLE PRECISION`),
-
+    avgVehicleOccupancyRis: toRisBasedAadt(avgVehicleOccupancy),
     avgVehicleOccupancyPassRis: avgVehicleOccupancyPass,
-    avgVehicleOccupancySinglRis: avgVehicleOccupancySingl,
+    avgVehicleOccupancySinglRis: toRisBasedAadt(avgVehicleOccupancySingl),
     avgVehicleOccupancyCombiRis: avgVehicleOccupancyCombi,
     avgVehicleOccupancyTruckRis: toRisBasedAadt(avgVehicleOccupancyTruck)
   }
@@ -167,17 +161,38 @@ const tmcMetadataFields = Object.keys(alias2DbColsMappings);
 const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   const tmcsArr = Array.isArray(tmcs) ? tmcs.slice() : [tmcs];
 
-  const colAliases = new Set(
-    (Array.isArray(columns) ? columns : [columns]).filter(c => c).sort()
+  const requestedCols = (Array.isArray(columns) ? columns : [columns])
+    .filter(c => c)
+    .sort();
+
+  // We always need the Primary Key
+  requestedCols.push('tmc');
+
+  // Do we neet RIS cols?
+  const requestedRisCols = columns.filter(col => col.match(/ris/i));
+  const risMetadataRequested = requestedRisCols.length;
+
+  // WARNING: Extremely brittle. Make sure to update if any changes to toRisBasedAadt
+  const risColsToRitisCols = requestedRisCols.reduce((acc, col) => {
+    acc[col] = col.replace(/(_)?ris/gi, '');
+    return acc;
+  }, {});
+
+  // If we need ris cols, also request the no-ris cols
+  //   so we can backfill in case the conflation failed for the TMC.
+  const requiredCols = _.uniq(
+    Array.prototype.concat(requestedCols, _.values(risColsToRitisCols))
   );
 
-  colAliases.add('tmc');
+  const selectClauseElems = [...requiredCols].map(col => {
+    const alias = alias2DbColsMappings[col];
 
-  const selectClauseElems = [...colAliases].map(
-    col => `${alias2DbColsMappings[col]} AS "${col}"`
-  );
+    if (!alias) {
+      throw new Error(`Unrecognized tmc metadata column: ${col}`);
+    }
 
-  const risMetadataRequested = columns.some(col => col.match(/ris/i));
+    return `${alias} AS "${col}"`;
+  });
 
   const risBasedAadtView = risMetadataRequested
     ? await getRisBasedAadtViewForNpmrdsYear(year)
@@ -202,6 +217,23 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
     const tmcSubset = tmcsArr.splice(0, TMC_SUBSET_SIZE);
 
     const { rows } = await query(sql, [tmcSubset]);
+
+    // Backfill missing RIS cols with RITIS cols
+    for (let i = 0; i < requestedRisCols.length; ++i) {
+      const risCol = requestedRisCols[i];
+      const ritisCol = risColsToRitisCols[risCol];
+
+      for (let j = 0; j < rows.length; ++j) {
+        const row = rows[j];
+
+        if (_.isNil(row[risCol])) {
+          console.warn(
+            `WARNING: Backfilling ${risCol} with ${ritisCol} for ${row.tmc}`
+          );
+          row[risCol] = row[ritisCol];
+        }
+      }
+    }
 
     result.push(...rows);
   }

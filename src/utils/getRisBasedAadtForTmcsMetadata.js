@@ -3,19 +3,21 @@ const memoizeOne = require('memoize-one');
 
 const { query } = require('../storage/services/DBService');
 
-const getRisBasedAadtForTmcsMetadata = memoizeOne(async () => {
+const getRisYearsForLatestConflationMapVersion = memoizeOne(async () => {
   const sql = `
     SELECT
         "conflationMapVersion",
         "risYears"
       FROM (
         SELECT
+            -- Extract the x_y_z semantic version from the conflation_map_vx_y_x_ris_based_aadt_<year> matviewname
             REGEXP_REPLACE(
               matviewname,
               '^conflation_map_v|_ris_based_aadt_\\d{4}$',
               '',
               'g'
             ) AS "conflationMapVersion",
+            -- Extract the year from the the conflation_map_vx_y_x_ris_based_aadt_<year> matviewname
             json_agg(
               (
                 regexp_match(
@@ -32,21 +34,26 @@ const getRisBasedAadtForTmcsMetadata = memoizeOne(async () => {
           )
           GROUP BY 1
       ) AS t
-      ORDER BY
+      ORDER BY -- descending conflation map version
           ( string_to_array("conflationMapVersion", '_') )[1]::INTEGER DESC,
           ( string_to_array("conflationMapVersion", '_') )[2]::INTEGER DESC,
           ( string_to_array("conflationMapVersion", '_') )[3]::INTEGER DESC
-      LIMIT 1
+      LIMIT 1  -- only the latest conflation map version
     ;
   `;
 
+  // Result schema:
+  //   {
+  //     conflationMapVersion: "x_y_z",
+  //     risYears: [ years with RIS data ]
+  //   }
   const { rows } = await query(sql);
 
   return _.isEmpty(rows) ? null : rows[0];
 });
 
 const getRisBasedAadtYearForNpmrdsYear = memoizeOne(async npmrdsYear => {
-  const risAadtForTmcsMetadata = await getRisBasedAadtForTmcsMetadata();
+  const risAadtForTmcsMetadata = await getRisYearsForLatestConflationMapVersion();
 
   if (risAadtForTmcsMetadata === null) {
     return null;
@@ -60,7 +67,7 @@ const getRisBasedAadtYearForNpmrdsYear = memoizeOne(async npmrdsYear => {
 });
 
 const getRisBasedAadtViewForNpmrdsYear = memoizeOne(async npmrdsYear => {
-  const metadata = await getRisBasedAadtForTmcsMetadata();
+  const metadata = await getRisYearsForLatestConflationMapVersion();
 
   if (metadata === null) {
     return null;
@@ -76,7 +83,7 @@ const getRisBasedAadtViewForNpmrdsYear = memoizeOne(async npmrdsYear => {
 });
 
 module.exports = {
-  getRisBasedAadtForTmcsMetadata,
+  getRisYearsForLatestConflationMapVersion,
   getRisBasedAadtYearForNpmrdsYear,
   getRisBasedAadtViewForNpmrdsYear
 };
