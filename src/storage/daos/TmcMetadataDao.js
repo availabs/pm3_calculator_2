@@ -173,7 +173,7 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   const risMetadataRequested = requestedRisCols.length;
 
   // WARNING: Extremely brittle. Make sure to update if any changes to toRisBasedAadt
-  const risColsToRitisCols = requestedRisCols.reduce((acc, col) => {
+  const risColsToNpmrdsShpCols = requestedRisCols.reduce((acc, col) => {
     acc[col] = col.replace(/(_)?ris/gi, '');
     return acc;
   }, {});
@@ -181,7 +181,7 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   // If we need ris cols, also request the no-ris cols
   //   so we can backfill in case the conflation failed for the TMC.
   const requiredCols = _.uniq(
-    Array.prototype.concat(requestedCols, _.values(risColsToRitisCols))
+    Array.prototype.concat(requestedCols, _.values(risColsToNpmrdsShpCols))
   );
 
   const selectClauseElems = [...requiredCols].map(col => {
@@ -218,19 +218,19 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
 
     const { rows } = await query(sql, [tmcSubset]);
 
-    // Backfill missing RIS cols with RITIS cols
+    // Backfill missing RIS cols with NPMRDS Shapefile cols
     for (let i = 0; i < requestedRisCols.length; ++i) {
       const risCol = requestedRisCols[i];
-      const ritisCol = risColsToRitisCols[risCol];
+      const npmrdsShpCol = risColsToNpmrdsShpCols[risCol];
 
       for (let j = 0; j < rows.length; ++j) {
         const row = rows[j];
 
         if (_.isNil(row[risCol])) {
           console.warn(
-            `WARNING: Backfilling ${risCol} with ${ritisCol} for ${row.tmc}`
+            `WARNING: Backfilling ${risCol} with ${npmrdsShpCol} for ${row.tmc}`
           );
-          row[risCol] = row[ritisCol];
+          row[risCol] = row[npmrdsShpCol];
         }
       }
     }
