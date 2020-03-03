@@ -423,18 +423,16 @@ class PhedCalculator {
         xdelayVehHrsByVehClassByTimePeriod[timePeriod];
 
       Object.keys(xdelayVehHrsByVehClass).forEach(vehClass => {
-        xdelayVehHrsByVehClass[vehClass] = precisionRound(
-          xdelayVehHrsByVehClass[vehClass],
-          3
-        );
+        xdelayVehHrsByVehClass[vehClass] = roundTravelTimes
+          ? precisionRound(xdelayVehHrsByVehClass[vehClass], 3)
+          : xdelayVehHrsByVehClass[vehClass];
       });
     });
 
     Object.keys(totalXDelayVehHrsByVehClass).forEach(vehClass => {
-      totalXDelayVehHrsByVehClass[vehClass] = precisionRound(
-        totalXDelayVehHrsByVehClass[vehClass],
-        3
-      );
+      totalXDelayVehHrsByVehClass[vehClass] = roundTravelTimes
+        ? precisionRound(totalXDelayVehHrsByVehClass[vehClass], 3)
+        : totalXDelayVehHrsByVehClass[vehClass];
     });
 
     return this.outputFormatter({

@@ -1,4 +1,7 @@
+const _ = require('lodash');
+
 const { query } = require('../services/DBService');
+
 const {
   cartesianProduct,
   intersection,
@@ -86,8 +89,13 @@ const getBinnedYearNpmrdsDataForTmc = async ({
   npmrdsDataKeys
 }) => {
   if (!Array.isArray(npmrdsDataSources)) {
-    throw new Error('ERROR: npmrdsDataSources params is required');
+    throw new Error('ERROR: npmrdsDataSources param is required');
   }
+
+  if (_.isNil(timeBinSize)) {
+    throw new Error('ERROR: timeBinSize param is required');
+  }
+
   const yr = +year;
 
   const startDate = `01/01/${yr}`;

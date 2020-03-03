@@ -69,11 +69,11 @@ const tmcMetadataTableColumnNames = [
 ];
 
 const buildDirAadtClause = aadtExpr =>
-  `(${aadtExpr}::NUMERIC / LEAST(COALESCE(faciltype,  2), 2)::NUMERIC)::DOUBLE PRECISION`;
+  `(${aadtExpr}::DOUBLE PRECISION / LEAST(COALESCE(faciltype,  2), 2)::DOUBLE PRECISION)::DOUBLE PRECISION`;
 
 const functionalClass = `(CASE WHEN f_system <= 2 THEN '${FREEWAY}' ELSE '${NONFREEWAY}' END)`;
 
-const aadtTruck = `(aadt_combi + aadt_singl)`;
+const aadtTruck = `(COALESCE(aadt_combi, 0) + COALESCE(aadt_singl, 0))`;
 const aadtPass = `(aadt - ${aadtTruck})`;
 
 const directionalAadt = buildDirAadtClause('aadt');
@@ -86,25 +86,24 @@ const directionalAadtPass = buildDirAadtClause(aadtPass);
 // const avgVehicleOccupancySingl = 10.25;
 // const avgVehicleOccupancyCombi = 1.11;
 
-// From Keith Miller Spreadsheet
+// From FHWA AVO Guidance Document: https://www.fhwa.dot.gov/tpm/guidance/avo_factors.pdf
 const avgVehicleOccupancyPass = 1.7;
-// const avgVehicleOccupancySingl = 16.8;
-const avgVehicleOccupancySingl = `(CASE ua_code WHEN '63217' THEN 16.8::NUMERIC ELSE 10.7::NUMERIC END)`;
+const avgVehicleOccupancySingl = `(CASE ua_code WHEN '63217' THEN 16.8::DOUBLE PRECISION ELSE 10.7::DOUBLE PRECISION END)`;
 const avgVehicleOccupancyCombi = 1;
 
 const avgVehicleOccupancy = `(
   (
     (${avgVehicleOccupancyPass} * ${aadtPass})
-    + (${avgVehicleOccupancySingl} * aadt_singl)
-    + (${avgVehicleOccupancyCombi} * aadt_combi)
+    + (${avgVehicleOccupancySingl} * COALESCE(aadt_singl, 0))
+    + (${avgVehicleOccupancyCombi} * COALESCE(aadt_combi, 0))
   ) / NULLIF(aadt, 0)
 )::DOUBLE PRECISION`;
 
 const avgVehicleOccupancyTruck = `(
   (
-    (${avgVehicleOccupancySingl} * aadt_singl)
-    + (${avgVehicleOccupancyCombi} * aadt_combi)
-  ) / NULLIF(aadt_singl + aadt_combi, 0)
+    (${avgVehicleOccupancySingl} * COALESCE(aadt_singl, 0))
+    + (${avgVehicleOccupancyCombi} * COALESCE(aadt_combi, 0))
+  ) / NULLIF(COALESCE(aadt_singl, 0) + COALESCE(aadt_combi, 0), 0)
 )::DOUBLE PRECISION`;
 
 // WARNING: changes to this function may require changes to getMetadataForTmcs

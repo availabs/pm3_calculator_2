@@ -10,14 +10,14 @@ const getRisYearsForLatestConflationMapVersion = memoizeOne(async () => {
         "risYears"
       FROM (
         SELECT
-            -- Extract the x_y_z semantic version from the conflation_map_vx_y_x_ris_based_aadt_<year> matviewname
+            -- Extract the x_y_z semantic version from the conflation_map_vx_y_x_ris_based_metadata_<year> matviewname
             REGEXP_REPLACE(
               matviewname,
-              '^conflation_map_v|_ris_based_aadt_\\d{4}$',
+              '^conflation_map_v|_ris_based_metadata_\\d{4}$',
               '',
               'g'
             ) AS "conflationMapVersion",
-            -- Extract the year from the the conflation_map_vx_y_x_ris_based_aadt_<year> matviewname
+            -- Extract the year from the the conflation_map_vx_y_x_ris_based_metadata_<year> matviewname
             json_agg(
               (
                 regexp_match(
@@ -30,7 +30,7 @@ const getRisYearsForLatestConflationMapVersion = memoizeOne(async () => {
           WHERE (
             ( schemaname = 'conflation' )
             AND
-            ( matviewname ~ '^conflation_map_v\\d{1,}_\\d{1,}_\\d{1,}_ris_based_aadt_\\d{4}$' )
+            ( matviewname ~ '^conflation_map_v\\d{1,}_\\d{1,}_\\d{1,}_ris_based_metadata_\\d{4}$' )
           )
           GROUP BY 1
       ) AS t
@@ -77,7 +77,7 @@ const getRisBasedAadtViewForNpmrdsYear = memoizeOne(async npmrdsYear => {
 
   const risAadtYear = await getRisBasedAadtYearForNpmrdsYear(npmrdsYear);
 
-  const viewName = `conflation.conflation_map_v${conflationMapVersion}_ris_based_aadt_${risAadtYear}`;
+  const viewName = `conflation.conflation_map_v${conflationMapVersion}_ris_based_metadata_${risAadtYear}`;
 
   return viewName;
 });

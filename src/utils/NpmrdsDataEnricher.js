@@ -1,4 +1,7 @@
+// TODO: This should be called in NpmrdsDataDao by getBinnedYearNpmrdsDataForTmc
+
 const assert = require('assert');
+
 const {
   buildTimeBinNum2HourTable,
   buildDate2DowTableForYear
