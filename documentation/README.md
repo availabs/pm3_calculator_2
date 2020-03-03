@@ -14,3 +14,4 @@
 
   * [Hourly Traffic Volume Profile Values for Figures 1.1 through 1.5](https://www.fhwa.dot.gov/tpm/guidance/60_minute_volume_profile_lookup.xlsx)
   * [Average Vehicle Occupancy Factors for Computing Travel Time Reliability Measures and Total Peak Hour Excessive Delay Metrics (April 2018)](https://www.fhwa.dot.gov/tpm/guidance/avo_factors.pdf)
+  *  [Highway Performance Monitoring System Field Manual Supplemental Guidance Travel Time Metric Data Reporting Requirements & Specifications](https://www.fhwa.dot.gov/tpm/guidance/pm3_hpms.pdf)
