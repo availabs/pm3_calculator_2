@@ -71,6 +71,17 @@ const tmcMetadataTableColumnNames = [
 const buildDirAadtClause = aadtExpr =>
   `(${aadtExpr}::DOUBLE PRECISION / LEAST(COALESCE(faciltype,  2), 2)::DOUBLE PRECISION)::DOUBLE PRECISION`;
 
+/*
+  From National Performance Measures for Congestion, Reliability, and Freight, and CMAQ Traffic Congestion
+    General Guidance and Step-by-Step Metric Calculation Procedures (June 2018)
+
+    To determine which of the 16 traffic distribution profiles should be assigned to
+    each reporting segment, the following guidance is provided:
+    • Functional Class. Assign based on f_system in NPMRDS segment attributes
+      file):
+      – Freeway. f_system=1 or 2.
+      – Nonfreeway. f_system=3, 4, 5, 6, or 7.
+*/
 const functionalClass = `(CASE WHEN f_system <= 2 THEN '${FREEWAY}' ELSE '${NONFREEWAY}' END)`;
 
 const aadtTruck = `(COALESCE(aadt_combi, 0) + COALESCE(aadt_singl, 0))`;
