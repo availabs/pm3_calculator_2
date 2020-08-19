@@ -7,17 +7,17 @@ const pLimit = require('p-limit');
 
 const calculatorSettings = require('./src/calculatorSettings');
 
-const { union } = require('./src/utils/SetUtils');
+const {union} = require('./src/utils/SetUtils');
 
 const OutputWriter = require('./src/storage/writers/OutputWriter');
 
-const { year, timeBinSize } = calculatorSettings;
+const {year, timeBinSize, progressbar} = calculatorSettings;
 
-const { end } = require('./src/storage/services/DBService');
+const {end} = require('./src/storage/services/DBService');
 
-const { getRequestedTmcs } = require('./src/requestedTmcs');
+const {getRequestedTmcs} = require('./src/requestedTmcs');
 
-const { getMetadataForTmcs } = require('./src/storage/daos/TmcMetadataDao');
+const {getMetadataForTmcs} = require('./src/storage/daos/TmcMetadataDao');
 const {
   getBinnedYearNpmrdsDataForTmc
 } = require('./src/storage/daos/NpmrdsDataDao');
@@ -57,10 +57,10 @@ const limit = pLimit(calculator_concurrency);
     } = compositeCalculator;
 
     const tmcs = await getRequestedTmcs(calculatorSettings);
-    const bar = new ProgressBar(
+    const bar = progressbar ? new ProgressBar(
       ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
-      { total: tmcs.length }
-    );
+      {total: tmcs.length}
+    ) : {tick: () => {}};
 
     const requiredTmcMetadata = union(
       ['state'],
@@ -75,7 +75,7 @@ const limit = pLimit(calculator_concurrency);
     });
 
     const tmcAttrsTable = tmcsAttrsArr.reduce((acc, d) => {
-      const { tmc } = d;
+      const {tmc} = d;
       acc[tmc] = d;
       return acc;
     }, {});
@@ -89,20 +89,20 @@ const limit = pLimit(calculator_concurrency);
               return;
             }
 
-            const { state } = attrs;
+            const {state} = attrs;
 
             const data =
               Array.isArray(npmrdsDataKeys) && npmrdsDataKeys.length
                 ? await getBinnedYearNpmrdsDataForTmc({
-                    year,
-                    timeBinSize,
-                    state,
-                    tmc,
-                    npmrdsDataKeys
-                  })
+                  year,
+                  timeBinSize,
+                  state,
+                  tmc,
+                  npmrdsDataKeys
+                })
                 : null;
 
-            NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
+            NpmrdsDataEnricher.enrichData({year, timeBinSize, data});
 
             const calculatorsOutput = await compositeCalculator.calculateForTmc(
               {
@@ -111,7 +111,7 @@ const limit = pLimit(calculator_concurrency);
               }
             );
 
-            await outputWriter.writeTmcData({ attrs, calculatorsOutput });
+            await outputWriter.writeTmcData({attrs, calculatorsOutput});
 
             bar.tick();
           } catch (err) {
