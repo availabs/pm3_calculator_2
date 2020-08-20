@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+
+/* eslint-disable no-console */
+
+const {exec} = require('child_process')
+const {promisify} = require('util')
+
+const execAsync = promisify(exec)
+
+const yargs = require('yargs');
+
+const cliArgsSpec = {
+  state: {demand: true, type: 'string'},
+  year: {
+    demand: true,
+    type: 'number'
+  },
+};
+
+const {argv: {state, year}} = yargs
+  .strict()
+  .parserConfiguration({
+    'camel-case-expansion': false,
+    'flatten-duplicate-arrays': false
+  })
+  .wrap(yargs.terminalWidth() / 1.618)
+  .option(cliArgsSpec);
+
+
+
+(async () => {
+  try {
+    const calculatorRuns = [
+      execAsync(
+        `./run --measures LOTTR TTTR PHED --state ${state} --year ${year} --head 1`,
+        {cwd: __dirname}
+      ),
+      execAsync(
+        `./run --measures PHED_FREEFLOW TED TED_FREEFLOW --state ${state} --year ${year} --head 1`,
+        {cwd: __dirname}
+      ),
+      execAsync(
+        `./run --measures PTI TTI PERCENT_BINS_REPORTING SPEED_PERCENTILES FREEFLOW --outputCalculatorsRequiredMetadata false  --outputHPMSRequiredTmcMetadata false --timeBinSize 5 --state ${state} --year ${year} --head 1`,
+        {cwd: __dirname}
+      ),
+    ]
+
+    if (state.toLowerCase() === 'ny') {
+      calculatorRuns.push(
+        execAsync(
+          `./run --measures PHED_RIS PHED_FREEFLOW_RIS TED_RIS TED_FREEFLOW_RIS --state ${state} --year ${year} --head 1`,
+          {cwd: __dirname}
+        )
+      )
+    }
+
+    await Promise.all(calculatorRuns)
+  } catch (err) {
+    console.error(err)
+    console.error(err.stderr)
+  }
+})()

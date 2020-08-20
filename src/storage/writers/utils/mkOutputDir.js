@@ -1,16 +1,16 @@
 /* eslint no-param-reassign: 0, global-require: 0 */
 
-const { mkdirSync } = require('fs');
-const { sync: mkdirpSync } = require('mkdirp');
-const { join } = require('path');
+const {existsSync, mkdirSync} = require('fs');
+const {sync: mkdirpSync} = require('mkdirp');
+const {join} = require('path');
 
 if (!process.env.CALCULATOR_OUTPUT_DIR) {
   require('../../../loadEnvFile');
 }
 
-const { CALCULATOR_OUTPUT_DIR = 'output' } = process.env;
+const {CALCULATOR_OUTPUT_DIR = 'output'} = process.env;
 
-const RETRY_LIMIT = 3;
+const RETRY_LIMIT = 10;
 
 const baseDirPath = join(__dirname, '../../../..', CALCULATOR_OUTPUT_DIR);
 
@@ -41,13 +41,18 @@ const mkOutputDir = async (retries = 0) => {
   );
 
   try {
-    mkdirSync(outputDirPath, { recursive: true });
+    if (existsSync(outputDirPath)) {
+      throw new Error('Dir exists')
+    }
+
+    mkdirSync(outputDirPath, {recursive: true});
+
     return {
       outputDirPath,
       outputTimestamp: timestamp
     };
   } catch (err) {
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 2000 * Math.random()));
     return mkOutputDir(++retries);
   }
 };
