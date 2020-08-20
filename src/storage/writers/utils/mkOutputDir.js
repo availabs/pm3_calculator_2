@@ -1,7 +1,6 @@
 /* eslint no-param-reassign: 0, global-require: 0 */
 
-const {existsSync, mkdirSync} = require('fs');
-const {sync: mkdirpSync} = require('mkdirp');
+const {execSync} = require('child_process');
 const {join} = require('path');
 
 if (!process.env.CALCULATOR_OUTPUT_DIR) {
@@ -10,13 +9,13 @@ if (!process.env.CALCULATOR_OUTPUT_DIR) {
 
 const {CALCULATOR_OUTPUT_DIR = 'output'} = process.env;
 
-const RETRY_LIMIT = 10;
+const RETRY_LIMIT = Infinity;
 
 const baseDirPath = join(__dirname, '../../../..', CALCULATOR_OUTPUT_DIR);
 
 const mkOutputDir = async (retries = 0) => {
   if (retries === 0) {
-    mkdirpSync(baseDirPath);
+    execSync(`mkdir -p ${baseDirPath}`)
   }
 
   if (retries > RETRY_LIMIT) {
@@ -41,18 +40,16 @@ const mkOutputDir = async (retries = 0) => {
   );
 
   try {
-    if (existsSync(outputDirPath)) {
-      throw new Error('Dir exists')
-    }
-
-    mkdirSync(outputDirPath, {recursive: true});
+    // We want the atomicity of mkdir
+    // https://stackoverflow.com/a/731634/3970755
+    execSync(`mkdir ${outputDirPath}`)
 
     return {
       outputDirPath,
       outputTimestamp: timestamp
     };
   } catch (err) {
-    await new Promise(r => setTimeout(r, 2000 * Math.random()));
+    await new Promise(r => setTimeout(r, 3000 * Math.random()));
     return mkOutputDir(++retries);
   }
 };
