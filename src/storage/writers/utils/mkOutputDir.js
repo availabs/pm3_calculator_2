@@ -49,7 +49,7 @@ const mkOutputDir = async (retries = 0) => {
       outputTimestamp: timestamp
     };
   } catch (err) {
-    await new Promise(r => setTimeout(r, 3000 * Math.random()));
+    await new Promise(r => setTimeout(r, 1000));
     return mkOutputDir(++retries);
   }
 };
