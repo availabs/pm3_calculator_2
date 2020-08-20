@@ -32,15 +32,15 @@ const {argv: {state, year}} = yargs
   try {
     const calculatorRuns = [
       execAsync(
-        `./run --measures LOTTR TTTR PHED --state ${state} --year ${year} --head 1`,
+        `./run --measures LOTTR TTTR PHED --state ${state} --year ${year}`,
         {cwd: __dirname}
       ),
       execAsync(
-        `./run --measures PHED_FREEFLOW TED TED_FREEFLOW --state ${state} --year ${year} --head 1`,
+        `./run --measures PHED_FREEFLOW TED TED_FREEFLOW --state ${state} --year ${year}`,
         {cwd: __dirname}
       ),
       execAsync(
-        `./run --measures PTI TTI PERCENT_BINS_REPORTING SPEED_PERCENTILES FREEFLOW --outputCalculatorsRequiredMetadata false  --outputHPMSRequiredTmcMetadata false --timeBinSize 5 --state ${state} --year ${year} --head 1`,
+        `./run --measures PTI TTI PERCENT_BINS_REPORTING SPEED_PERCENTILES FREEFLOW --outputCalculatorsRequiredMetadata false  --outputHPMSRequiredTmcMetadata false --timeBinSize 5 --state ${state} --year ${year}`,
         {cwd: __dirname}
       ),
     ]
@@ -48,7 +48,7 @@ const {argv: {state, year}} = yargs
     if (state.toLowerCase() === 'ny') {
       calculatorRuns.push(
         execAsync(
-          `./run --measures PHED_RIS PHED_FREEFLOW_RIS TED_RIS TED_FREEFLOW_RIS --state ${state} --year ${year} --head 1`,
+          `./run --measures PHED_RIS PHED_FREEFLOW_RIS TED_RIS TED_FREEFLOW_RIS --state ${state} --year ${year}`,
           {cwd: __dirname}
         )
       )
