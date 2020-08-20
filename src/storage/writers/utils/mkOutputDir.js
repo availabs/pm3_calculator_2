@@ -42,7 +42,7 @@ const mkOutputDir = async (retries = 0) => {
   try {
     // We want the atomicity of mkdir
     // https://stackoverflow.com/a/731634/3970755
-    execSync(`mkdir ${outputDirPath}`)
+    execSync(`mkdir ${outputDirPath} >/dev/null 2>&1`)
 
     return {
       outputDirPath,
