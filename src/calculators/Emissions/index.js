@@ -1,8 +1,8 @@
-const RisBasedAadtExcessiveDelayCalculatorExtender = require('../RisBasedAadtExcessiveDelayCalculatorExtender');
+const RisBasedAadtEmissionsCalculatorExtender = require('../RisBasedAadtEmissionsCalculatorExtender');
 
 const EmissionsCalculator = require('./EmissionsCalculator');
 
-const EmissionsRisCalculator = RisBasedAadtExcessiveDelayCalculatorExtender.extendClass(
+const EmissionsRisCalculator = RisBasedAadtEmissionsCalculatorExtender.extendClass(
   EmissionsCalculator,
 );
 

@@ -86,6 +86,8 @@ class EmissionsCalculator {
     // Use the same binSize for the timeBinSize & trafficDistributionTimeBinSize
     this.trafficDistributionTimeBinSize = this.timeBinSize;
 
+    this.dirAadtTypes = dirAadtTypes;
+
     this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
       this,
     );
@@ -111,7 +113,7 @@ class EmissionsCalculator {
   get requiredTmcMetadata() {
     return union(
       ['isprimary', 'miles', 'functionalClass'],
-      dirAadtTypes,
+      this.dirAadtTypes,
       this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
     );
   }
