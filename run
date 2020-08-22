@@ -7,19 +7,19 @@ const pLimit = require('p-limit');
 
 const calculatorSettings = require('./src/calculatorSettings');
 
-const {union} = require('./src/utils/SetUtils');
+const { union } = require('./src/utils/SetUtils');
 
 const OutputWriter = require('./src/storage/writers/OutputWriter');
 
-const {year, timeBinSize, progressbar} = calculatorSettings;
+const { year, timeBinSize, progressbar } = calculatorSettings;
 
-const {end} = require('./src/storage/services/DBService');
+const { end } = require('./src/storage/services/DBService');
 
-const {getRequestedTmcs} = require('./src/requestedTmcs');
+const { getRequestedTmcs } = require('./src/requestedTmcs');
 
-const {getMetadataForTmcs} = require('./src/storage/daos/TmcMetadataDao');
+const { getMetadataForTmcs } = require('./src/storage/daos/TmcMetadataDao');
 const {
-  getBinnedYearNpmrdsDataForTmc
+  getBinnedYearNpmrdsDataForTmc,
 } = require('./src/storage/daos/NpmrdsDataDao');
 
 const NpmrdsDataEnricher = require('./src/utils/NpmrdsDataEnricher');
@@ -31,7 +31,7 @@ if (!process.env.CALCULATOR_CONCURRENCY) {
 }
 
 const calculator_concurrency = Number.isFinite(
-  +process.env.CALCULATOR_CONCURRENCY
+  +process.env.CALCULATOR_CONCURRENCY,
 )
   ? +process.env.CALCULATOR_CONCURRENCY
   : 10;
@@ -44,44 +44,46 @@ const limit = pLimit(calculator_concurrency);
 
     const outputWriter = new OutputWriter({
       calculatorSettings,
-      calculators: compositeCalculator.calculators
+      calculators: compositeCalculator.calculators,
     });
 
     const {
-      requiredTmcMetadata: outputWriterRequiredTmcMetadata
+      requiredTmcMetadata: outputWriterRequiredTmcMetadata,
     } = outputWriter;
 
     const {
       npmrdsDataKeys,
-      requiredTmcMetadata: calculatorsRequiredTmcMetadata
+      requiredTmcMetadata: calculatorsRequiredTmcMetadata,
     } = compositeCalculator;
 
     const tmcs = await getRequestedTmcs(calculatorSettings);
-    const bar = progressbar ? new ProgressBar(
-      ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
-      {total: tmcs.length}
-    ) : {tick: () => {}};
+    const bar = progressbar
+      ? new ProgressBar(
+          ':current of :total (:percent) | :rate tmcs/sec | Elapsed :elapsed | ETA :eta',
+          { total: tmcs.length },
+        )
+      : { tick: () => {} };
 
     const requiredTmcMetadata = union(
       ['state'],
       outputWriterRequiredTmcMetadata,
-      calculatorsRequiredTmcMetadata
+      calculatorsRequiredTmcMetadata,
     );
 
     const tmcsAttrsArr = await getMetadataForTmcs({
       year,
       tmcs,
-      columns: requiredTmcMetadata
+      columns: requiredTmcMetadata,
     });
 
     const tmcAttrsTable = tmcsAttrsArr.reduce((acc, d) => {
-      const {tmc} = d;
+      const { tmc } = d;
       acc[tmc] = d;
       return acc;
     }, {});
 
     await Promise.all(
-      tmcs.map(tmc =>
+      tmcs.map((tmc) =>
         limit(async () => {
           try {
             const attrs = tmcAttrsTable[tmc];
@@ -89,36 +91,36 @@ const limit = pLimit(calculator_concurrency);
               return;
             }
 
-            const {state} = attrs;
+            const { state } = attrs;
 
             const data =
               Array.isArray(npmrdsDataKeys) && npmrdsDataKeys.length
                 ? await getBinnedYearNpmrdsDataForTmc({
-                  year,
-                  timeBinSize,
-                  state,
-                  tmc,
-                  npmrdsDataKeys
-                })
+                    year,
+                    timeBinSize,
+                    state,
+                    tmc,
+                    npmrdsDataKeys,
+                  })
                 : null;
 
-            NpmrdsDataEnricher.enrichData({year, timeBinSize, data});
+            NpmrdsDataEnricher.enrichData({ year, timeBinSize, data });
 
             const calculatorsOutput = await compositeCalculator.calculateForTmc(
               {
                 attrs,
-                data
-              }
+                data,
+              },
             );
 
-            await outputWriter.writeTmcData({attrs, calculatorsOutput});
+            await outputWriter.writeTmcData({ attrs, calculatorsOutput });
 
             bar.tick();
           } catch (err) {
             throw new Error(err);
           }
-        })
-      )
+        }),
+      ),
     );
 
     await outputWriter.writeCalculatorMetadata();
