@@ -1,4 +1,4 @@
-/* eslint import/no-dynamic-require: 0, global-require: 0 */
+/* eslint-disable global-require */
 
 const _ = require('lodash');
 
@@ -13,7 +13,8 @@ const impls = [
   ..._.values(require('./Freeflow')),
   ..._.values(require('./TravelTimeIndexCalculator')),
   ..._.values(require('./PlanningTimeIndexCalculator')),
-  ..._.values(require('./SpeedPercentiles'))
+  ..._.values(require('./SpeedPercentiles')),
+  ..._.values(require('./Emissions')),
 ];
 
 const metadata = impls.reduce(
@@ -29,7 +30,7 @@ const metadata = impls.reduce(
 
     return acc;
   },
-  { names: {}, impls: {}, configDefaults: {}, configOptions: {} }
+  { names: {}, impls: {}, configDefaults: {}, configOptions: {} },
 );
 
 module.exports = metadata;
