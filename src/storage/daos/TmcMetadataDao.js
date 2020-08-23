@@ -6,7 +6,7 @@ const { query } = require('../services/DBService');
 const { FREEWAY, NONFREEWAY } = require('../../enums/functionalClasses');
 
 const {
-  getRisBasedAadtViewForNpmrdsYear
+  getRisBasedAadtViewForNpmrdsYear,
 } = require('../../utils/getRisBasedAadtForTmcsMetadata');
 
 const TMC_SUBSET_SIZE = 1000;
@@ -65,10 +65,10 @@ const tmcMetadataTableColumnNames = [
   // 'avg_vehicle_occupancy'
   'state_code',
   'county_code',
-  'isprimary'
+  'isprimary',
 ];
 
-const buildDirAadtClause = aadtExpr =>
+const buildDirAadtClause = (aadtExpr) =>
   `(${aadtExpr}::DOUBLE PRECISION / LEAST(COALESCE(faciltype,  2), 2)::DOUBLE PRECISION)::DOUBLE PRECISION`;
 
 /*
@@ -118,7 +118,7 @@ const avgVehicleOccupancyTruck = `(
 )::DOUBLE PRECISION`;
 
 // WARNING: changes to this function may require changes to getMetadataForTmcs
-const toRisBasedAadt = str => {
+const toRisBasedAadt = (str) => {
   return str
     .replace(/aadt\b/g, 'aadt_ris')
     .replace(/aadt_singl/g, 'aadt_singl_ris')
@@ -162,8 +162,8 @@ const alias2DbColsMappings = tmcMetadataTableColumnNames.reduce(
     avgVehicleOccupancyPassRis: avgVehicleOccupancyPass,
     avgVehicleOccupancySinglRis: toRisBasedAadt(avgVehicleOccupancySingl),
     avgVehicleOccupancyCombiRis: avgVehicleOccupancyCombi,
-    avgVehicleOccupancyTruckRis: toRisBasedAadt(avgVehicleOccupancyTruck)
-  }
+    avgVehicleOccupancyTruckRis: toRisBasedAadt(avgVehicleOccupancyTruck),
+  },
 );
 
 const tmcMetadataFields = Object.keys(alias2DbColsMappings);
@@ -172,14 +172,14 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   const tmcsArr = Array.isArray(tmcs) ? tmcs.slice() : [tmcs];
 
   const requestedCols = (Array.isArray(columns) ? columns : [columns])
-    .filter(c => c)
+    .filter((c) => c)
     .sort();
 
   // We always need the Primary Key
   requestedCols.push('tmc');
 
   // Do we neet RIS cols?
-  const requestedRisCols = columns.filter(col => col.match(/ris/i));
+  const requestedRisCols = columns.filter((col) => col.match(/ris/i));
   const risMetadataRequested = requestedRisCols.length;
 
   // WARNING: Extremely brittle. Make sure to update if any changes to toRisBasedAadt
@@ -191,10 +191,10 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
   // If we need ris cols, also request the no-ris cols
   //   so we can backfill in case the conflation failed for the TMC.
   const requiredCols = _.uniq(
-    Array.prototype.concat(requestedCols, _.values(risColsToNpmrdsShpCols))
+    Array.prototype.concat(requestedCols, _.values(risColsToNpmrdsShpCols)),
   );
 
-  const selectClauseElems = [...requiredCols].map(col => {
+  const selectClauseElems = [...requiredCols].map((col) => {
     const alias = alias2DbColsMappings[col];
 
     if (!alias) {
@@ -253,5 +253,5 @@ const getMetadataForTmcs = async ({ year, tmcs, columns }) => {
 
 module.exports = {
   tmcMetadataFields,
-  getMetadataForTmcs
+  getMetadataForTmcs,
 };

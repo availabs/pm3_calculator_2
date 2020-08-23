@@ -1,4 +1,4 @@
-const { chain, equal, fill, mapValues, range, sum } = require('lodash');
+const { chain, isEqual, fill, mapValues, range, sum } = require('lodash');
 const memoizeOne = require('memoize-one');
 
 const { cartesianProduct } = require('../../utils/SetUtils');
@@ -18,7 +18,7 @@ const MINUTES_PER_EPOCH = 5;
 
 const {
   AVAIL,
-  CATTLAB
+  CATTLAB,
 } = require('../../enums/trafficDistributionProfilesVersions');
 
 // AVAIL traffic dist profiles are 5 minute bins CATTLab's are hourly.
@@ -26,19 +26,19 @@ const {
 // CONSIDER: Should we smooth out the CATTLab 5-minute binned curve?
 const tdpsVersions5minBin = {
   [AVAIL]: AVAILTrafficDistributionProfiles,
-  [CATTLAB]: mapValues(CATTLabTrafficDistributionProfiles, tdp =>
+  [CATTLAB]: mapValues(CATTLabTrafficDistributionProfiles, (tdp) =>
     chain(tdp)
-      .map(hrCt => fill(Array(12), hrCt / 12))
+      .map((hrCt) => fill(Array(12), hrCt / 12))
       .flatten()
-      .value()
-  )
+      .value(),
+  ),
 };
 
 const getTimeBinnedTrafficDistributionProfile = memoizeOne(
   ({
     trafficDistributionProfilesVersion,
     trafficDistributionProfileName,
-    trafficDistributionTimeBinSize
+    trafficDistributionTimeBinSize,
   }) => {
     const tdp5min =
       tdpsVersions5minBin[trafficDistributionProfilesVersion][
@@ -52,14 +52,14 @@ const getTimeBinnedTrafficDistributionProfile = memoizeOne(
 
     return timeBinnedTrafficDistributionProfile;
   },
-  equal
+  isEqual,
 );
 
 const getFractionOfDailyAadtForNpmrdsDataTimeBin = ({
   trafficDistributionProfile,
   trafficDistributionTimeBinSize,
   timeBinSize,
-  timeBinNum
+  timeBinNum,
 }) => {
   // debugger;
   let fractionOfDailyAadt;
@@ -67,7 +67,7 @@ const getFractionOfDailyAadtForNpmrdsDataTimeBin = ({
   if (trafficDistributionTimeBinSize >= timeBinSize) {
     // Case 1: We need to get a fraction of a single trafficDistributionProfile bin
     const tdpBin = Math.floor(
-      (timeBinSize / trafficDistributionTimeBinSize) * timeBinNum
+      (timeBinSize / trafficDistributionTimeBinSize) * timeBinNum,
     );
     const tdpFractionForBin = trafficDistributionProfile[tdpBin];
 
@@ -77,14 +77,14 @@ const getFractionOfDailyAadtForNpmrdsDataTimeBin = ({
   } else {
     // Case 2: We need to get a sum across multiple trafficDistributionProfile bins
     const tdpStartBin = Math.floor(
-      (timeBinSize / trafficDistributionTimeBinSize) * timeBinNum
+      (timeBinSize / trafficDistributionTimeBinSize) * timeBinNum,
     );
     const tdpEndBin =
       tdpStartBin + Math.floor(timeBinSize / trafficDistributionTimeBinSize);
 
     const tdpFractions = trafficDistributionProfile.slice(
       tdpStartBin,
-      tdpEndBin
+      tdpEndBin,
     );
 
     fractionOfDailyAadt = sum(tdpFractions);
@@ -104,7 +104,7 @@ const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
     directionality,
     trafficDistributionProfilesVersion,
     trafficDistributionTimeBinSize,
-    timeBinSize
+    timeBinSize,
   }) => {
     // Traffic Distribution Profiles at trafficDistributionTimeBinSize resolution
     const profiles = [WEEKEND, WEEKDAY].reduce((acc, dayType) => {
@@ -112,13 +112,13 @@ const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
         dayType,
         congestionLevel,
         directionality,
-        functionalClass
+        functionalClass,
       });
 
       acc[dayType] = getTimeBinnedTrafficDistributionProfile({
         trafficDistributionProfilesVersion,
         trafficDistributionProfileName,
-        trafficDistributionTimeBinSize
+        trafficDistributionTimeBinSize,
       });
 
       return acc;
@@ -130,7 +130,7 @@ const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
     const fractionOfDailyAadtByDowByTimeBin = cartesianProduct(
       range(NUM_MONTHS_IN_YEAR),
       range(NUM_DAYS_IN_WEEK),
-      range(numBinsInDay)
+      range(numBinsInDay),
     ).reduce((acc, [month, dow, timeBinNum]) => {
       const monthAdjustmentFactor =
         TrafficDistributionMonthAdjustmentFactors[month];
@@ -142,8 +142,8 @@ const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
           trafficDistributionProfile,
           trafficDistributionTimeBinSize,
           timeBinSize,
-          timeBinNum
-        }
+          timeBinNum,
+        },
       );
 
       acc[month] = acc[month] || [];
@@ -158,9 +158,9 @@ const getFractionOfDailyAadtByMonthByDowByTimeBin = memoizeOne(
 
     return fractionOfDailyAadtByDowByTimeBin;
   },
-  equal
+  isEqual,
 );
 
 module.exports = {
-  getFractionOfDailyAadtByMonthByDowByTimeBin
+  getFractionOfDailyAadtByMonthByDowByTimeBin,
 };

@@ -6,20 +6,20 @@ const {
   cartesianProduct,
   intersection,
   union,
-  uniq
+  uniq,
 } = require('../../utils/SetUtils');
 
 const {
   TRAVEL_TIME,
   SPEED,
-  DATA_DENSITY
+  DATA_DENSITY,
 } = require('../../enums/npmrdsMetrics');
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
 
 const {
   getNpmrdsTableColumn,
   getNpmrdsDataKey,
-  parseNpmrdsDataKey
+  parseNpmrdsDataKey,
 } = require('../../utils/NpmrdsDataKey');
 
 const meanTypes = Object.keys(require('../../enums/meanTypes.js'));
@@ -29,10 +29,10 @@ const npmrdsMetrics = Object.keys(require('../../enums/npmrdsMetrics'));
 const MINUTES_PER_EPOCH = 5;
 
 const metricKeyParamCombos = cartesianProduct(
-  meanTypes.map(meanType => ({ meanType })),
-  npmrdsDataSources.map(npmrdsDataSource => ({ npmrdsDataSource })),
-  npmrdsMetrics.map(npmrdsMetric => ({ npmrdsMetric }))
-).map(triplet => Object.assign({}, ...triplet));
+  meanTypes.map((meanType) => ({ meanType })),
+  npmrdsDataSources.map((npmrdsDataSource) => ({ npmrdsDataSource })),
+  npmrdsMetrics.map((npmrdsMetric) => ({ npmrdsMetric })),
+).map((triplet) => Object.assign({}, ...triplet));
 
 const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
   const { meanType, npmrdsDataSource, npmrdsMetric } = params;
@@ -45,7 +45,7 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
   if (npmrdsMetric === TRAVEL_TIME || npmrdsMetric === SPEED) {
     const npmrdsTableCol = getNpmrdsTableColumn({
       npmrdsDataSource,
-      npmrdsMetric: TRAVEL_TIME
+      npmrdsMetric: TRAVEL_TIME,
     });
 
     const metricValueExpression =
@@ -78,7 +78,7 @@ const npmrdsDataKey2SqlTable = metricKeyParamCombos.reduce((acc, params) => {
 
 const allNpmrdsDataKeys = Object.keys(npmrdsDataKey2SqlTable);
 const numericFieldNpmrdsDataKeys = allNpmrdsDataKeys.filter(
-  k => parseNpmrdsDataKey(k).npmrdsMetric !== DATA_DENSITY
+  (k) => parseNpmrdsDataKey(k).npmrdsMetric !== DATA_DENSITY,
 );
 
 const getBinnedYearNpmrdsDataForTmc = async ({
@@ -86,7 +86,7 @@ const getBinnedYearNpmrdsDataForTmc = async ({
   timeBinSize,
   tmc,
   state,
-  npmrdsDataKeys
+  npmrdsDataKeys,
 }) => {
   if (!Array.isArray(npmrdsDataSources)) {
     throw new Error('ERROR: npmrdsDataSources param is required');
@@ -105,7 +105,7 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 
   const cols = uniq(npmrdsDataKeys)
     .sort()
-    .map(npmrdsDataKey => npmrdsDataKey2SqlTable[npmrdsDataKey]);
+    .map((npmrdsDataKey) => npmrdsDataKey2SqlTable[npmrdsDataKey]);
 
   const unrecognizedNpmrdsDataKeys = cols.reduce((acc, col, i) => {
     if (!col) {
@@ -116,12 +116,12 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 
   if (unrecognizedNpmrdsDataKeys.length) {
     throw new Error(
-      `ERROR: unrecognized npmrdsDataKeys ${unrecognizedNpmrdsDataKeys}`
+      `ERROR: unrecognized npmrdsDataKeys ${unrecognizedNpmrdsDataKeys}`,
     );
   }
 
   const requiresTmcLength = npmrdsDataKeys.some(
-    npmrdsDataKey => parseNpmrdsDataKey(npmrdsDataKey).npmrdsMetric === SPEED
+    (npmrdsDataKey) => parseNpmrdsDataKey(npmrdsDataKey).npmrdsMetric === SPEED,
   );
 
   const epochsPerBin = Math.floor(timeBinSize / MINUTES_PER_EPOCH);
@@ -149,18 +149,18 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 
   const q = {
     text: sql,
-    values: [tmc, startDate, endDate]
+    values: [tmc, startDate, endDate],
   };
 
   const { rows } = await query(q);
 
   // NOTE: pg-node return NUMERIC values as strings
-  rows.forEach(row => {
+  rows.forEach((row) => {
     union(intersection(numericFieldNpmrdsDataKeys, npmrdsDataKeys)).forEach(
-      k => {
+      (k) => {
         // eslint-disable-next-line no-param-reassign
         row[k] = row[k] === null ? null : +row[k];
-      }
+      },
     );
   });
 
@@ -168,5 +168,5 @@ const getBinnedYearNpmrdsDataForTmc = async ({
 };
 
 module.exports = {
-  getBinnedYearNpmrdsDataForTmc
+  getBinnedYearNpmrdsDataForTmc,
 };

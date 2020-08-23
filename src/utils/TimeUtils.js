@@ -5,29 +5,29 @@ const memoizeOne = require('memoize-one');
 
 const EPOCHS_PER_DAY = 288;
 
-const getNumBinsInDayForTimeBinSize = memoizeOne(timeBinSize =>
-  Math.floor((5 / timeBinSize) * EPOCHS_PER_DAY)
+const getNumBinsInDayForTimeBinSize = memoizeOne((timeBinSize) =>
+  Math.floor((5 / timeBinSize) * EPOCHS_PER_DAY),
 );
 
-const buildTimeBinNum2HourTable = memoizeOne(timeBinSize => {
+const buildTimeBinNum2HourTable = memoizeOne((timeBinSize) => {
   const numBinsInDay = getNumBinsInDayForTimeBinSize(timeBinSize);
 
   return [...new Array(numBinsInDay)].map((_, timeBinNum) =>
-    Math.floor((timeBinSize * timeBinNum) / 60)
+    Math.floor((timeBinSize * timeBinNum) / 60),
   );
 });
 
-const getDaylightSavingsStartDateForYear = memoizeOne(year => ({
+const getDaylightSavingsStartDateForYear = memoizeOne((year) => ({
   year,
   month: 3,
-  date: 14 - new Date(`${year}/03/07`).getDay()
+  date: 14 - new Date(`${year}/03/07`).getDay(),
 }));
 
 const isLeapYear = memoizeOne(
-  year => year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  (year) => year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0),
 );
 
-const getNumDaysPerMonthForYear = memoizeOne(year => [
+const getNumDaysPerMonthForYear = memoizeOne((year) => [
   31,
   isLeapYear(year) ? 29 : 28,
   31,
@@ -39,10 +39,10 @@ const getNumDaysPerMonthForYear = memoizeOne(year => [
   30,
   31,
   30,
-  31
+  31,
 ]);
 
-const buildDate2DowTableForYear = memoizeOne(year =>
+const buildDate2DowTableForYear = memoizeOne((year) =>
   Object.freeze(
     (() => {
       const numDaysPerMonth = getNumDaysPerMonthForYear(year);
@@ -61,8 +61,8 @@ const buildDate2DowTableForYear = memoizeOne(year =>
       }
 
       return d2d;
-    })()
-  )
+    })(),
+  ),
 );
 
 const getNumBinsForYear = memoizeOne(({ year, timeBinSize }) => {
@@ -133,7 +133,7 @@ const getNumBinsPerTimePeriodForYear = memoizeOne(
 
     return counts;
   },
-  isEqual
+  isEqual,
 );
 
 module.exports = {
@@ -142,5 +142,5 @@ module.exports = {
   buildTimeBinNum2HourTable,
   buildDate2DowTableForYear,
   getNumBinsForYear,
-  getNumBinsPerTimePeriodForYear
+  getNumBinsPerTimePeriodForYear,
 };

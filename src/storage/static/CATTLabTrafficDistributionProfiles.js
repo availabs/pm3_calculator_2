@@ -18,7 +18,7 @@ const {
   WEEKDAY_MODERATE_CONGESTION_EVEN_DIST_FREEWAY,
   WEEKDAY_MODERATE_CONGESTION_EVEN_DIST_NONFREEWAY,
   WEEKDAY_SEVERE_CONGESTION_EVEN_DIST_FREEWAY,
-  WEEKDAY_SEVERE_CONGESTION_EVEN_DIST_NONFREEWAY
+  WEEKDAY_SEVERE_CONGESTION_EVEN_DIST_NONFREEWAY,
 } = require('../../enums/trafficDistributionProfiles');
 
 module.exports = {
@@ -46,7 +46,7 @@ module.exports = {
     0.0297,
     0.0259,
     0.0199,
-    0.0128
+    0.0128,
   ],
   [WEEKDAY_NO2LOW_CONGESTION_AM_PEAK_NONFREEWAY]: [
     0.0057,
@@ -72,7 +72,7 @@ module.exports = {
     0.0327,
     0.0267,
     0.0191,
-    0.0113
+    0.0113,
   ],
   [WEEKDAY_NO2LOW_CONGESTION_PM_PEAK_FREEWAY]: [
     0.0095,
@@ -98,7 +98,7 @@ module.exports = {
     0.0344,
     0.0301,
     0.0235,
-    0.0163
+    0.0163,
   ],
   [WEEKDAY_NO2LOW_CONGESTION_PM_PEAK_NONFREEWAY]: [
     0.0079,
@@ -124,7 +124,7 @@ module.exports = {
     0.0375,
     0.0306,
     0.0227,
-    0.0148
+    0.0148,
   ],
   [WEEKDAY_MODERATE_CONGESTION_AM_PEAK_FREEWAY]: [
     0.0073,
@@ -150,7 +150,7 @@ module.exports = {
     0.03,
     0.0268,
     0.0209,
-    0.0133
+    0.0133,
   ],
   [WEEKDAY_MODERATE_CONGESTION_AM_PEAK_NONFREEWAY]: [
     0.0063,
@@ -176,7 +176,7 @@ module.exports = {
     0.0331,
     0.027,
     0.0193,
-    0.0117
+    0.0117,
   ],
   [WEEKDAY_MODERATE_CONGESTION_PM_PEAK_FREEWAY]: [
     0.0095,
@@ -202,7 +202,7 @@ module.exports = {
     0.0351,
     0.0315,
     0.0251,
-    0.017
+    0.017,
   ],
   [WEEKDAY_MODERATE_CONGESTION_PM_PEAK_NONFREEWAY]: [
     0.0078,
@@ -228,7 +228,7 @@ module.exports = {
     0.0392,
     0.0312,
     0.0223,
-    0.0144
+    0.0144,
   ],
   [WEEKDAY_SEVERE_CONGESTION_AM_PEAK_FREEWAY]: [
     0.0078,
@@ -254,7 +254,7 @@ module.exports = {
     0.0318,
     0.0287,
     0.0224,
-    0.0143
+    0.0143,
   ],
   [WEEKDAY_SEVERE_CONGESTION_AM_PEAK_NONFREEWAY]: [
     0.0069,
@@ -280,7 +280,7 @@ module.exports = {
     0.0345,
     0.0285,
     0.0212,
-    0.013
+    0.013,
   ],
   [WEEKDAY_SEVERE_CONGESTION_PM_PEAK_FREEWAY]: [
     0.009,
@@ -306,7 +306,7 @@ module.exports = {
     0.0362,
     0.0326,
     0.0261,
-    0.0169
+    0.0169,
   ],
   [WEEKDAY_SEVERE_CONGESTION_PM_PEAK_NONFREEWAY]: [
     0.0081,
@@ -332,7 +332,7 @@ module.exports = {
     0.0396,
     0.0319,
     0.0233,
-    0.0153
+    0.0153,
   ],
   [WEEKEND_FREEWAY]: [
     0.0187,
@@ -358,7 +358,7 @@ module.exports = {
     0.0406,
     0.0358,
     0.0296,
-    0.0237
+    0.0237,
   ],
   [WEEKEND_NONFREEWAY]: [
     0.0174,
@@ -384,7 +384,7 @@ module.exports = {
     0.0401,
     0.0339,
     0.0268,
-    0.0217
+    0.0217,
   ],
   [WEEKDAY_NO2LOW_CONGESTION_EVEN_DIST_FREEWAY]: [
     0.01,
@@ -410,7 +410,7 @@ module.exports = {
     0.0355,
     0.0315,
     0.0251,
-    0.0167
+    0.0167,
   ],
   [WEEKDAY_NO2LOW_CONGESTION_EVEN_DIST_NONFREEWAY]: [
     0.0095,
@@ -436,7 +436,7 @@ module.exports = {
     0.0439,
     0.0397,
     0.0295,
-    0.0183
+    0.0183,
   ],
   [WEEKDAY_MODERATE_CONGESTION_EVEN_DIST_FREEWAY]: [
     0.01,
@@ -462,7 +462,7 @@ module.exports = {
     0.0355,
     0.0315,
     0.0251,
-    0.0167
+    0.0167,
   ],
   [WEEKDAY_MODERATE_CONGESTION_EVEN_DIST_NONFREEWAY]: [
     0.0095,
@@ -488,7 +488,7 @@ module.exports = {
     0.0439,
     0.0397,
     0.0295,
-    0.0183
+    0.0183,
   ],
   [WEEKDAY_SEVERE_CONGESTION_EVEN_DIST_FREEWAY]: [
     0.01,
@@ -514,7 +514,7 @@ module.exports = {
     0.0355,
     0.0315,
     0.0251,
-    0.0167
+    0.0167,
   ],
   [WEEKDAY_SEVERE_CONGESTION_EVEN_DIST_NONFREEWAY]: [
     0.0095,
@@ -540,6 +540,6 @@ module.exports = {
     0.0439,
     0.0397,
     0.0295,
-    0.0183
-  ]
+    0.0183,
+  ],
 };
