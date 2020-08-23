@@ -194,10 +194,13 @@ class EmissionsCalculator {
 
       const { [speedAllVehicles]: allSpeed, dow, month, timeBinNum } = row;
 
-      const {
-        [speedPassengerVehicles]: passSpeed = allSpeed,
-        [speedFreighTrucks]: truckSpeed = allSpeed,
+      let {
+        [speedPassengerVehicles]: passSpeed,
+        [speedFreighTrucks]: truckSpeed,
       } = row;
+
+      passSpeed = passSpeed || allSpeed;
+      truckSpeed = truckSpeed || allSpeed;
 
       assert(!_.isNil(speedAllVehicles));
       assert(!_.isNil(speedFreighTrucks));

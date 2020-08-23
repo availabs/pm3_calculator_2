@@ -15,7 +15,7 @@ function eavFormatter(output) {
         year: this.year,
         measure: this.constructor.measure,
         attribute: `${_.snakeCase(`${vehicleClass}_${timePeriod}`)}_co2`,
-        value: _.round(co2Emissions.pass[timePeriod], 3),
+        value: _.round(co2Emissions[vehicleClass][timePeriod], 3),
       }));
     }),
   );
