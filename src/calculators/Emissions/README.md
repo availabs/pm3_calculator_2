@@ -90,3 +90,7 @@
 ## FWHA Guidance References
 
 [Sample Methodologies for Regional Emissions Analysis in Small Urban and Rural Areas](https://www.fhwa.dot.gov/Environment/air_quality/conformity/research/sample_methodologies/emismeth03.cfm)
+
+[Computation of Travel Time Metrics](http://onlinepubs.trb.org/onlinepubs/shrp2/L35RFP/L03Report_AppG.pdf)
+
+[MOVES Algorithms](https://www.epa.gov/moves/moves-algorithms)

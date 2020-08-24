@@ -23,8 +23,8 @@ const { getNpmrdsDataKey } = require('../../utils/NpmrdsDataKey');
 
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
-const getPassengerVehicleCO2ForSpeed = require('./getPassengerVehicleCO2ForSpeed');
-const getFreightTruckCO2ForSpeed = require('./getFreightTruckCO2ForSpeed');
+const getPassengerVehicleCO2PerVMT = require('./getPassengerVehicleCO2PerVMT');
+const getFreightTruckCO2PerVMT = require('./getFreightTruckCO2PerVMT');
 
 const { ALL, PASS, TRUCK } = npmrdsDataSourcesEnum;
 
@@ -214,8 +214,8 @@ class EmissionsCalculator {
         combiDirAadt,
       ].map((dirAadt) => dirAadt * fractionOfDailyAadt * miles);
 
-      const passCO2 = getPassengerVehicleCO2ForSpeed(passSpeed);
-      const truckCO2 = getFreightTruckCO2ForSpeed(truckSpeed);
+      const passCO2 = getPassengerVehicleCO2PerVMT(passSpeed);
+      const truckCO2 = getFreightTruckCO2PerVMT(truckSpeed);
 
       co2Emissions.pass.total += passCO2 * vmtPass;
       co2Emissions.pass[timePeriod] += passCO2 * vmtPass;
@@ -235,6 +235,13 @@ class EmissionsCalculator {
       },
       {},
     );
+
+    // Convert the C02 units to tonnes
+    Object.keys(co2Emissions).forEach((vehClass) => {
+      Object.keys(co2Emissions[vehClass]).forEach((timePeriod) => {
+        co2Emissions[vehClass][timePeriod] /= 1000000;
+      });
+    });
 
     return this.outputFormatter({
       tmc,
