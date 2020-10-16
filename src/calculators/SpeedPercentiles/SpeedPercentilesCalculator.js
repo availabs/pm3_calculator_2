@@ -35,7 +35,7 @@ const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
 const outputFormatters = require('./SpeedPercentilesOutputFormatters');
 
 const SPEED_PERCENTILES = 'SPEED_PERCENTILES';
-const percentiles = [5, 20, 25, 50, 75, 80, 95];
+const percentiles = [5, 20, 25, 50, 75, 80, 85, 95];
 
 function isCanonicalConfig(configDefaults) {
   return (
