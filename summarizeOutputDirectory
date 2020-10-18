@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+
+const { readFileSync } = require('fs');
+const { dirname, basename, join } = require('path');
+
+const { sync: glob } = require('glob');
+const _ = require('lodash');
+
+const outputDir = join(__dirname, './output');
+
+const calculationOutputDirectories = glob(
+  `${outputDir}/npmrds_measures_calculator_*`,
+);
+const calculationMetadataFiles = glob(
+  `${outputDir}/*/calculator_metadata.json`,
+);
+
+const completeCalculationDirectories = calculationMetadataFiles.map(
+  (calcMetaFile) => dirname(calcMetaFile),
+);
+
+const incompleteCalculationDirectories = _.difference(
+  calculationOutputDirectories,
+  completeCalculationDirectories,
+);
+
+if (incompleteCalculationDirectories.length > 0) {
+  console.error('===== Incomplete Calculation Directories =====');
+  incompleteCalculationDirectories.forEach((d) => console.error('    ', d));
+  console.error();
+}
+
+const cols = ['states', 'year', 'measures', 'timeBinSize', 'dirname'];
+const calculationMetadata = _.sortBy(
+  calculationMetadataFiles.sort().reduce((acc, calcMetaFile) => {
+    const { calculatorSettings } = JSON.parse(
+      readFileSync(calcMetaFile).toString(),
+    );
+
+    calculatorSettings.dirname = basename(dirname(calcMetaFile));
+
+    const row = cols.reduce((acc, c) => {
+      acc[c] = calculatorSettings[c];
+      return acc;
+    }, {});
+
+    acc.push(row);
+
+    return acc;
+  }, []),
+  [0, 1],
+);
+
+// console.log(JSON.stringify(calculationMetadata, null, 4));
+console.log('===== Calculation Summaries ====');
+console.table(calculationMetadata);

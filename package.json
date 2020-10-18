@@ -19,6 +19,7 @@
     "dotenv": "^7.0.0",
     "dotenv-expand": "^5.1.0",
     "fast-csv": "^2.4.1",
+    "glob": "^7.1.6",
     "json-stable-stringify": "^1.0.1",
     "lodash": "^4.17.11",
     "markdown-pdf": "^10.0.0",
