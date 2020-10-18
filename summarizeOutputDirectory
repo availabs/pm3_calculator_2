@@ -40,7 +40,10 @@ const calculationMetadata = _.sortBy(
     calculatorSettings.dirname = basename(dirname(calcMetaFile));
 
     const row = cols.reduce((acc, c) => {
-      acc[c] = calculatorSettings[c];
+      acc[c] =
+        c === 'measures'
+          ? `${calculatorSettings[c].join(',')}`
+          : calculatorSettings[c];
       return acc;
     }, {});
 
@@ -48,7 +51,7 @@ const calculationMetadata = _.sortBy(
 
     return acc;
   }, []),
-  [0, 1],
+  ['states', 'year', 'measures'],
 );
 
 // console.log(JSON.stringify(calculationMetadata, null, 4));
