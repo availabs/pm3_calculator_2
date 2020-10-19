@@ -20,14 +20,14 @@ const { ALL } = npmrdsDataSourcesEnum;
 
 const {
   names: timePeriodSpecNamesEnum,
-  specs: generalTimePeriodSpecs
+  specs: generalTimePeriodSpecs,
 } = require('../timePeriods/TimePeriodSpecs');
 
 const timePeriodSpecNames = Object.keys(timePeriodSpecNamesEnum);
 
 const {
   MEASURE_DEFAULT_TIME_PERIOD_SPEC,
-  PM3_TIME_PERIOD_SPEC
+  PM3_TIME_PERIOD_SPEC,
 } = timePeriodSpecNamesEnum;
 
 const defaultTimePeriodSpec = generalTimePeriodSpecs[PM3_TIME_PERIOD_SPEC];
@@ -40,7 +40,9 @@ const percentiles = [5, 20, 25, 50, 75, 80, 85, 95];
 function isCanonicalConfig(configDefaults) {
   return (
     this.timeBinSize === 15 &&
-    Object.keys(configDefaults).every(k => isEqual(this[k], configDefaults[k]))
+    Object.keys(configDefaults).every((k) =>
+      isEqual(this[k], configDefaults[k]),
+    )
   );
 }
 
@@ -53,10 +55,10 @@ class SpeedPercentilesCalculator {
     this.timeBinSize = calcConfigParams.timeBinSize;
 
     this.outputFormatter = outputFormatters[calcConfigParams.outputFormat].bind(
-      this
+      this,
     );
 
-    Object.keys(configDefaults).forEach(k => {
+    Object.keys(configDefaults).forEach((k) => {
       this[k] =
         calcConfigParams[k] === undefined
           ? configDefaults[k]
@@ -78,15 +80,20 @@ class SpeedPercentilesCalculator {
   async calculateForTmc({ data, attrs }) {
     const { tmc } = attrs;
     const {
-      npmrdsDataKeys: [npmrdsDataKey]
+      npmrdsDataKeys: [npmrdsDataKey],
     } = this;
 
+    const allSpeeds = [];
     const speedsByTimePeriod = data.reduce((acc, row) => {
       assert.strictEqual(row.tmc, attrs.tmc);
 
       const { [npmrdsDataKey]: speed } = row;
 
       const timePeriod = this.timePeriodIdentifier(row);
+
+      if (speed !== null) {
+        allSpeeds.push(speed);
+      }
 
       if (timePeriod && speed !== null) {
         acc[timePeriod] = acc[timePeriod] || [];
@@ -96,8 +103,10 @@ class SpeedPercentilesCalculator {
       return acc;
     }, {});
 
-    Object.values(speedsByTimePeriod).forEach(metricValues =>
-      metricValues.sort(numbersComparator)
+    speedsByTimePeriod.total = allSpeeds;
+
+    Object.values(speedsByTimePeriod).forEach((metricValues) =>
+      metricValues.sort(numbersComparator),
     );
 
     const speedPercentilesByTimePeriod = percentiles.reduce((acc1, pctl) => {
@@ -106,13 +115,13 @@ class SpeedPercentilesCalculator {
           acc2[timePeriod] = _.round(
             quantileSorted(
               speedsByTimePeriod[timePeriod],
-              _.round(pctl / 100, 2)
-            )
+              _.round(pctl / 100, 2),
+            ),
           );
 
           return acc2;
         },
-        {}
+        {},
       );
 
       return acc1;
@@ -121,7 +130,7 @@ class SpeedPercentilesCalculator {
     const result = {
       tmc,
       npmrdsDataKey,
-      speedPercentilesByTimePeriod
+      speedPercentilesByTimePeriod,
     };
 
     return this.outputFormatter(result);
@@ -135,14 +144,14 @@ SpeedPercentilesCalculator.configDefaults = {
   npmrdsDataSource: ALL,
   npmrdsMetric: SPEED,
   timePeriodSpec: MEASURE_DEFAULT_TIME_PERIOD_SPEC,
-  roundTravelTimes: true
+  roundTravelTimes: true,
 };
 SpeedPercentilesCalculator.configOptions = {
   meanType: [ARITHMETIC, HARMONIC],
   npmrdsDataSource: npmrdsDataSources,
   npmrdsMetric: [SPEED],
   timePeriodSpec: timePeriodSpecNames,
-  roundTravelTimes: [true]
+  roundTravelTimes: [true],
 };
 SpeedPercentilesCalculator.defaultTimePeriodSpec = defaultTimePeriodSpec;
 
