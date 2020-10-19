@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 const { isEqual } = require('lodash');
-const { quantileSorted } = require('simple-statistics');
+const ss = require('simple-statistics');
 const _ = require('lodash');
 
 const { ARITHMETIC, HARMONIC } = require('../../enums/meanTypes');
@@ -83,41 +83,39 @@ class SpeedPercentilesCalculator {
       npmrdsDataKeys: [npmrdsDataKey],
     } = this;
 
-    const allSpeeds = [];
-    const speedsByTimePeriod = data.reduce((acc, row) => {
-      assert.strictEqual(row.tmc, attrs.tmc);
+    const speedsByTimePeriod = data.reduce(
+      (acc, row) => {
+        assert.strictEqual(row.tmc, attrs.tmc);
 
-      const { [npmrdsDataKey]: speed } = row;
+        const { [npmrdsDataKey]: speed } = row;
 
-      const timePeriod = this.timePeriodIdentifier(row);
+        const timePeriod = this.timePeriodIdentifier(row);
 
-      if (speed !== null) {
-        allSpeeds.push(speed);
-      }
+        if (speed !== null) {
+          acc.total.push(speed);
+        }
 
-      if (timePeriod && speed !== null) {
-        acc[timePeriod] = acc[timePeriod] || [];
-        acc[timePeriod].push(speed);
-      }
+        if (timePeriod && timePeriod !== 'total' && speed !== null) {
+          acc[timePeriod] = acc[timePeriod] || [];
+          acc[timePeriod].push(speed);
+        }
 
-      return acc;
-    }, {});
-
-    speedsByTimePeriod.total = allSpeeds;
-
-    Object.values(speedsByTimePeriod).forEach((metricValues) =>
-      metricValues.sort(numbersComparator),
+        return acc;
+      },
+      { total: [] },
     );
 
     const speedPercentilesByTimePeriod = percentiles.reduce((acc1, pctl) => {
       acc1[pctl] = Object.keys(speedsByTimePeriod).reduce(
         (acc2, timePeriod) => {
-          acc2[timePeriod] = _.round(
-            quantileSorted(
-              speedsByTimePeriod[timePeriod],
-              _.round(pctl / 100, 2),
-            ),
-          );
+          acc2[timePeriod] = _.isEmpty(speedsByTimePeriod[timePeriod])
+            ? null
+            : _.round(
+                ss.quantile(
+                  speedsByTimePeriod[timePeriod],
+                  _.round(pctl / 100, 2),
+                ),
+              );
 
           return acc2;
         },
