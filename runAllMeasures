@@ -2,62 +2,64 @@
 
 /* eslint-disable no-console */
 
-const {exec} = require('child_process')
-const {promisify} = require('util')
+const { exec } = require('child_process');
+const { promisify } = require('util');
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
 
 const yargs = require('yargs');
 
 const cliArgsSpec = {
-  state: {demand: true, type: 'string'},
+  state: { demand: true, type: 'string' },
   year: {
     demand: true,
-    type: 'number'
+    type: 'number',
   },
 };
 
-const {argv: {state, year}} = yargs
+const {
+  argv: { state, year },
+} = yargs
   .strict()
   .parserConfiguration({
     'camel-case-expansion': false,
-    'flatten-duplicate-arrays': false
+    'flatten-duplicate-arrays': false,
   })
   .wrap(yargs.terminalWidth() / 1.618)
   .option(cliArgsSpec);
 
-
-const debugFlags = `--head 3`;
-// const debugFlags = '';
+// const debugFlags = `--head 3`;
+const debugFlags = '';
 
 (async () => {
   try {
-    const runCmds = [`./run --measures LOTTR TTTR PHED --state ${state} --year ${year} ${debugFlags}`,
-    `./run --measures PHED PHED_FREEFLOW TED TED_FREEFLOW EMISSIONS --phedNpmrdsDataSource TRUCK --tedNpmrdsDataSource ALL TRUCK --state ${state} --year ${year} ${debugFlags}`,
-    `./run --measures PTI TTI PERCENT_BINS_REPORTING SPEED_PERCENTILES FREEFLOW --outputCalculatorsRequiredMetadata false  --outputHPMSRequiredTmcMetadata false --timeBinSize 5 --state ${state} --year ${year} ${debugFlags}`,
-    ]
+    const runCmds = [
+      `./run --measures LOTTR TTTR PHED --state ${state} --year ${year} ${debugFlags}`,
+      `./run --measures PHED PHED_FREEFLOW TED TED_FREEFLOW EMISSIONS --phedNpmrdsDataSource TRUCK --tedNpmrdsDataSource ALL TRUCK --state ${state} --year ${year} ${debugFlags}`,
+      `./run --measures PTI TTI PERCENT_BINS_REPORTING SPEED_PERCENTILES FREEFLOW --outputCalculatorsRequiredMetadata false  --outputHPMSRequiredTmcMetadata false --timeBinSize 5 --state ${state} --year ${year} ${debugFlags}`,
+    ];
 
     if (state.toLowerCase() === 'ny') {
       runCmds.push(
         `./run --measures PHED_RIS PHED_FREEFLOW_RIS TED_RIS TED_FREEFLOW_RIS EMISSIONS_RIS --phedRisNpmrdsDataSource ALL TRUCK --tedRisNpmrdsDataSource ALL TRUCK --state ${state} --year ${year} ${debugFlags}`,
-      )
+      );
     }
 
-    const results = await Promise.all(runCmds.map(cmd =>
-      execAsync(cmd, {cwd: __dirname})
-    ))
+    const results = await Promise.all(
+      runCmds.map((cmd) => execAsync(cmd, { cwd: __dirname })),
+    );
 
     results.forEach((res, i) => {
-      console.log('--- COMMAND ---')
-      console.log(runCmds[i])
-      console.log('--- STDOUT ---')
-      console.log(res.stdout)
-      console.log('--- STDERR ---')
-      console.log(res.stderr)
-      console.log()
-    })
+      console.log('--- COMMAND ---');
+      console.log(runCmds[i]);
+      console.log('--- STDOUT ---');
+      console.log(res.stdout);
+      console.log('--- STDERR ---');
+      console.log(res.stderr);
+      console.log();
+    });
   } catch (err) {
-    console.error(err)
-    console.error(err.stderr)
+    console.error(err);
+    console.error(err.stderr);
   }
-})()
+})();
