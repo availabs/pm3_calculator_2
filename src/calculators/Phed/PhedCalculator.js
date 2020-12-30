@@ -218,10 +218,14 @@ class PhedCalculator {
           : calcConfigParams[k];
     });
 
-    this.measure = this.npmrdsDataSource === ALL
-      ? this.constructor.measure
-      // FIXME: Brittle. Adds TRUCK or PASS after PHED or TED and before RIS (if RIS-based).
-      : this.constructor.measure.replace(/_|$/, `_${this.npmrdsDataSource}$&`)
+    this.measure =
+      this.npmrdsDataSource === ALL
+        ? this.constructor.measure
+        : // FIXME: Brittle. Adds TRUCK or PASS after PHED or TED and before RIS (if RIS-based).
+          this.constructor.measure.replace(
+            /_|$/,
+            `_${this.npmrdsDataSource}$&`,
+          );
 
     const timePeriodSpecDef =
       this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
@@ -248,7 +252,18 @@ class PhedCalculator {
       t.replace(/directionalAadt/, 'avgVehicleOccupancy'),
     );
 
-    this.npmrdsDataKeys = [getNpmrdsDataKey(this)];
+    this.primaryNpmrdsDataKey = getNpmrdsDataKey(this);
+
+    this.secondaryNpmrdsDataKey = getNpmrdsDataKey({
+      meanType: this.meanType,
+      npmrdsMetric: this.npmrdsMetric,
+      npmrdsDataSource: ALL,
+    });
+
+    this.npmrdsDataKeys = _.uniq([
+      this.primaryNpmrdsDataKey,
+      this.secondaryNpmrdsDataKey,
+    ]);
 
     this.isSpeedBased = this.npmrdsMetric === SPEED;
 
@@ -297,7 +312,8 @@ class PhedCalculator {
     );
 
     const {
-      npmrdsDataKeys: [npmrdsDataKey],
+      primaryNpmrdsDataKey,
+      secondaryNpmrdsDataKey,
       timeBinSize,
       trafficDistributionTimeBinSize,
       trafficDistributionProfilesVersion,
@@ -378,8 +394,12 @@ class PhedCalculator {
 
       const timePeriod = this.timePeriodIdentifier(row);
 
+      const metricValue = _.isNil(row[primaryNpmrdsDataKey])
+        ? row[secondaryNpmrdsDataKey]
+        : row[primaryNpmrdsDataKey];
+
       if (timePeriod) {
-        const { [npmrdsDataKey]: metricValue, month, dow, timeBinNum } = row;
+        const { month, dow, timeBinNum } = row;
 
         const xdelayHrs = getXDelayHrs(tmcCalcCtx, metricValue);
 
@@ -443,7 +463,7 @@ class PhedCalculator {
     return this.outputFormatter({
       tmc,
       miles,
-      npmrdsDataKey,
+      npmrdsDataKey: primaryNpmrdsDataKey,
       avgSpeedlimit,
       thresholdSpeed,
       thresholdTravelTimeSec,

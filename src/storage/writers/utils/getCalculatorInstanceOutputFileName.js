@@ -1,12 +1,14 @@
 const { lowerCase } = require('lodash');
 
+const getCalculatorInstanceConfig = require('../../../utils/getCalculatorInstanceConfig');
+
 const measureOutputFileCounts = {};
 
 const getCalculatorInstanceOutputFileName = ({
   calculator,
-  outputFileFormat
+  outputFileFormat,
 }) => {
-  const { measure } = calculator.constructor;
+  const { measure } = getCalculatorInstanceConfig(calculator);
 
   measureOutputFileCounts[measure] = measureOutputFileCounts[measure] || 0;
   ++measureOutputFileCounts[measure];

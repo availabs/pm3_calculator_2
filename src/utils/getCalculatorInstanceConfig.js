@@ -2,8 +2,8 @@ const { pick } = require('lodash');
 
 const globalConfigOpts = ['year', 'timeBinSize'];
 
-const getCalculatorInstanceConfig = calculator => {
-  const { measure } = calculator.constructor;
+const getCalculatorInstanceConfig = (calculator) => {
+  const measure = calculator.measure || calculator.constructor.measure;
   const { isCanonical } = calculator;
 
   const configKeys = Object.keys(calculator.constructor.configOptions).sort();
@@ -11,7 +11,7 @@ const getCalculatorInstanceConfig = calculator => {
   return Object.assign(
     {},
     { measure, isCanonical },
-    pick(calculator, [...globalConfigOpts, ...configKeys])
+    pick(calculator, [...globalConfigOpts, ...configKeys]),
   );
 };
 
