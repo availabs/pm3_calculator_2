@@ -21,7 +21,7 @@ function eavFormatter(output) {
   const baseFields = {
     tmc,
     year: this.year,
-    measure: this.constructor.measure
+    measure: this.measure
   };
 
   const formatted = [

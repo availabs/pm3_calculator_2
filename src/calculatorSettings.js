@@ -35,7 +35,11 @@ const {
 const measureNames = Object.keys(measureNamesEnum);
 
 const measureSpecificCliFlagsRE = new RegExp(
-  measureNames.map(m => `^${camelCase(m)}`).join('|'),
+  measureNames
+    // FIXME: So phedRis matches before phed.
+    //        May be implementation detail rather than JS spec.
+    .sort((a,b) => b.length - a.length)
+    .map(m => `^${camelCase(m)}`).join('|'),
   'i'
 );
 

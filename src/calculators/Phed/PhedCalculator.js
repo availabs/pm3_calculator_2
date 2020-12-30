@@ -218,6 +218,11 @@ class PhedCalculator {
           : calcConfigParams[k];
     });
 
+    this.measure = this.npmrdsDataSource === ALL
+      ? this.constructor.measure
+      // FIXME: Brittle. Adds TRUCK or PASS after PHED or TED and before RIS (if RIS-based).
+      : this.constructor.measure.replace(/_|$/, `_${this.npmrdsDataSource}$&`)
+
     const timePeriodSpecDef =
       this.timePeriodSpec === MEASURE_DEFAULT_TIME_PERIOD_SPEC
         ? defaultTimePeriodSpec
