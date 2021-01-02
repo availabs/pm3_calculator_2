@@ -274,6 +274,7 @@ class PhedCalculator {
     return union(
       ['functionalClass', 'avgVehicleOccupancy', 'isprimary'],
       this.vehClassDirAadtTypes,
+      this.avgVehcleOccupancyTypes,
       this.trafficDistributionFactorsCalculator.requiredTmcMetadata,
       this.thresholdSpeedCalculator.requiredTmcMetadata,
     );
