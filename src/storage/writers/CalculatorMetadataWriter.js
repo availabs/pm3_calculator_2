@@ -2,13 +2,15 @@ const { promisify } = require('util');
 const { writeFile } = require('fs');
 const { join } = require('path');
 
+const _ = require('lodash');
+
 const writeFileAsync = promisify(writeFile);
 
 const { getRequestedGeographies } = require('../../requestedGeographies');
 
 const {
   connectionInfo,
-  getReferencedDatabaseTables
+  getReferencedDatabaseTables,
 } = require('../daos/DBStateDao');
 
 const GitRepoState = require('../../utils/GitRepoState');
@@ -17,7 +19,7 @@ const getCalculatorInstanceConfig = require('../../utils/getCalculatorInstanceCo
 
 const representsSingleCompleteState = async ({ calculatorSettings }) => {
   const requestedGeographies = await getRequestedGeographies(
-    calculatorSettings
+    calculatorSettings,
   );
 
   if (
@@ -30,8 +32,8 @@ const representsSingleCompleteState = async ({ calculatorSettings }) => {
 
   const [
     {
-      states: [state]
-    }
+      states: [state],
+    },
   ] = requestedGeographies;
 
   return state;
@@ -46,7 +48,7 @@ class MetadataWriter {
     calculatorInstanceOuputFileNames,
     tmcMetadataFileName,
     risMetadataFileName,
-    authoritativeVersionCandidacyDisqualifications
+    authoritativeVersionCandidacyDisqualifications,
   }) {
     this.timestamp = outputTimestamp;
 
@@ -58,9 +60,16 @@ class MetadataWriter {
     this.calculators = calculators;
     this.calculatorsState = this.calculators.map((calculator, i) =>
       Object.assign({}, getCalculatorInstanceConfig(calculator), {
-        outputFileName: calculatorInstanceOuputFileNames[i]
-      })
+        outputFileName: calculatorInstanceOuputFileNames[i],
+      }),
     );
+
+    this.calculatedMeasures = _(calculators)
+      .map(getCalculatorInstanceConfig)
+      .map('measure')
+      .sort()
+      .sortedUniq()
+      .value();
 
     this.tmcMetadataFileName = tmcMetadataFileName;
     this.risMetadataFileName = risMetadataFileName;
@@ -82,13 +91,14 @@ class MetadataWriter {
       state: singleCompleteState,
       authoritativeVersionCandidate: this.authoritativeVersionCandidate,
       timestamp: this.timestamp,
+      calculatedMeasures: this.calculatedMeasures,
       calculatorSettings: this.calculatorSettings,
       calculators: this.calculatorsState,
       gitRepoState: GitRepoState,
       dbState: {
         connectionInfo,
-        referencedDatabaseTables
-      }
+        referencedDatabaseTables,
+      },
     };
 
     if (this.tmcMetadataFileName) {
