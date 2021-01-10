@@ -64,13 +64,6 @@ class MetadataWriter {
       }),
     );
 
-    this.calculatedMeasures = _(calculators)
-      .map(getCalculatorInstanceConfig)
-      .map('measure')
-      .sort()
-      .sortedUniq()
-      .value();
-
     this.tmcMetadataFileName = tmcMetadataFileName;
     this.risMetadataFileName = risMetadataFileName;
 
@@ -91,7 +84,6 @@ class MetadataWriter {
       state: singleCompleteState,
       authoritativeVersionCandidate: this.authoritativeVersionCandidate,
       timestamp: this.timestamp,
-      calculatedMeasures: this.calculatedMeasures,
       calculatorSettings: this.calculatorSettings,
       calculators: this.calculatorsState,
       gitRepoState: GitRepoState,
