@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+
+const { readFileSync, existsSync } = require('fs');
+const { join, isAbsolute } = require('path');
+
+const { Client } = require('pg');
+
+const dotenv = require('dotenv');
+const dotenvExpand = require('dotenv-expand');
+
+var {
+  _: [sqlFilePath],
+} = require('yargs/yargs')(process.argv.slice(2))
+  .usage('Usage: $0 <path to migration SQL script>')
+  .example('$0 ./sql/pm3CalcRun20210109.sql')
+  .demandCommand(1).argv;
+
+const sqlFileAbsolutePath = isAbsolute(sqlFilePath)
+  ? sqlFilePath
+  : join(process.cwd(), sqlFilePath);
+
+if (!existsSync(sqlFileAbsolutePath)) {
+  console.error(`File does not exists: ${sqlFileAbsolutePath}`);
+  process.exit(1);
+}
+
+const migrationSql = readFileSync(sqlFileAbsolutePath).toString();
+
+const envFilePath = join(__dirname, '../../.env');
+
+const preConfig = dotenv.config({ path: envFilePath });
+dotenvExpand(preConfig);
+
+(async () => {
+  const client = new Client();
+
+  try {
+    await client.connect();
+
+    const migrationOutput = await client.query(migrationSql);
+
+    console.log('Migration Script output');
+    console.log(JSON.stringify(migrationOutput, null, 4));
+
+    console.log();
+
+    const adminOutput = await client.query(
+      'INSERT INTO pm3._admin_adding_calculation_version_migration_scripts (sql) VALUES ($1);',
+      [migrationSql],
+    );
+
+    console.log(JSON.stringify(adminOutput, null, 4));
+
+    console.log();
+  } catch (err) {
+    // Clean up failed load. DELETE cascades.
+    console.error(err.message);
+  } finally {
+    client.end();
+  }
+})();
