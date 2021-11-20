@@ -23,8 +23,22 @@ const { getNpmrdsDataKey } = require('../../utils/NpmrdsDataKey');
 
 const npmrdsDataSourcesEnum = require('../../enums/npmrdsDataSources');
 
-const getPassengerVehicleCO2PerVMT = require('./getPassengerVehicleCO2PerVMT');
-const getFreightTruckCO2PerVMT = require('./getFreightTruckCO2PerVMT');
+const getPassengerVehicleCO2PerVMT = require('./utils/getPassengerVehicleCO2PerVMT');
+const getFreightTruckCO2PerVMT = require('./utils/getFreightTruckCO2PerVMT');
+
+const getGasolineCOPerVMT = require('./utils/getGasolineCOPerVMT');
+const getGasolineCO2PerVMT = require('./utils/getGasolineCO2PerVMT');
+const getGasolineNoxPerVMT = require('./utils/getGasolineNoxPerVMT');
+const getGasolinePM2_5PerVMT = require('./utils/getGasolinePM2_5PerVMT');
+const getGasolinePM10PerVMT = require('./utils/getGasolinePM10PerVMT');
+const getGasolineVOCPerVMT = require('./utils/getGasolineVOCPerVMT');
+
+const getDieselCOPerVMT = require('./utils/getDieselCOPerVMT');
+const getDieselCO2PerVMT = require('./utils/getDieselCO2PerVMT');
+const getDieselNoxPerVMT = require('./utils/getDieselNoxPerVMT');
+const getDieselPM2_5PerVMT = require('./utils/getDieselPM2_5PerVMT');
+const getDieselPM10PerVMT = require('./utils/getDieselPM10PerVMT');
+const getDieselVOCPerVMT = require('./utils/getDieselVOCPerVMT');
 
 const { ALL, PASS, TRUCK } = npmrdsDataSourcesEnum;
 
@@ -170,20 +184,36 @@ class EmissionsCalculator {
     //   of VMT that occurs at the different speed levels, and MOBILE6 then weights
     //   the speed-specific emission rates by VMT to produce a composite emission factor.
 
-    const co2Emissions = {
-      pass: ['total', ...timePeriodNames].reduce((acc, timePeriod) => {
-        acc[timePeriod] = 0;
+    const getInitializedKeyedEmissionsTotals = (keys) =>
+      keys.reduce((acc, k) => {
+        acc[k] = ['total', ...timePeriodNames].reduce((acc2, timePeriod) => {
+          acc2[timePeriod] = 0;
+          return acc2;
+        }, {});
         return acc;
-      }, {}),
-      singl: ['total', ...timePeriodNames].reduce((acc, timePeriod) => {
-        acc[timePeriod] = 0;
-        return acc;
-      }, {}),
-      combi: ['total', ...timePeriodNames].reduce((acc, timePeriod) => {
-        acc[timePeriod] = 0;
-        return acc;
-      }, {}),
-    };
+      }, {});
+
+    const co2Emissions = getInitializedKeyedEmissionsTotals([
+      'pass',
+      'singl',
+      'combi',
+    ]);
+
+    const passGasolineVehicleEmissions = getInitializedKeyedEmissionsTotals([
+      'co',
+      'co2',
+      'nox',
+      'pm2_5',
+      'pm10',
+      'voc',
+    ]);
+
+    const singlDieselVehicleEmissions = _.cloneDeep(
+      passGasolineVehicleEmissions,
+    );
+    const combiDieselVehicleEmissions = _.cloneDeep(
+      passGasolineVehicleEmissions,
+    );
 
     for (let i = 0; i < data.length; ++i) {
       const row = data[i];
@@ -225,6 +255,59 @@ class EmissionsCalculator {
 
       co2Emissions.combi.total += truckCO2 * vmtCombi;
       co2Emissions.combi[timePeriod] += truckCO2 * vmtCombi;
+
+      const gasCO = getGasolineCOPerVMT(passSpeed);
+      const gasCO2 = getGasolineCO2PerVMT(passSpeed);
+      const gasNox = getGasolineNoxPerVMT(passSpeed);
+      const gasPm2_5 = getGasolinePM2_5PerVMT(passSpeed);
+      const gasPm10 = getGasolinePM10PerVMT(passSpeed);
+      const gasVoc = getGasolineVOCPerVMT(passSpeed);
+
+      passGasolineVehicleEmissions.co.total += gasCO * vmtPass;
+      passGasolineVehicleEmissions.co[timePeriod] += gasCO * vmtPass;
+      passGasolineVehicleEmissions.co2.total += gasCO2 * vmtPass;
+      passGasolineVehicleEmissions.co2[timePeriod] += gasCO2 * vmtPass;
+      passGasolineVehicleEmissions.nox.total += gasNox * vmtPass;
+      passGasolineVehicleEmissions.nox[timePeriod] += gasNox * vmtPass;
+      passGasolineVehicleEmissions.pm2_5.total += gasPm2_5 * vmtPass;
+      passGasolineVehicleEmissions.pm2_5[timePeriod] += gasPm2_5 * vmtPass;
+      passGasolineVehicleEmissions.pm10.total += gasPm10 * vmtPass;
+      passGasolineVehicleEmissions.pm10[timePeriod] += gasPm10 * vmtPass;
+      passGasolineVehicleEmissions.voc.total += gasVoc * vmtPass;
+      passGasolineVehicleEmissions.voc[timePeriod] += gasVoc * vmtPass;
+
+      const dieselCO = getDieselCOPerVMT(truckSpeed);
+      const dieselCO2 = getDieselCO2PerVMT(truckSpeed);
+      const dieselNox = getDieselNoxPerVMT(truckSpeed);
+      const dieselPm2_5 = getDieselPM2_5PerVMT(truckSpeed);
+      const dieselPm10 = getDieselPM10PerVMT(truckSpeed);
+      const dieselVoc = getDieselVOCPerVMT(truckSpeed);
+
+      combiDieselVehicleEmissions.co.total += dieselCO * vmtCombi;
+      combiDieselVehicleEmissions.co[timePeriod] += dieselCO * vmtCombi;
+      combiDieselVehicleEmissions.co2.total += dieselCO2 * vmtCombi;
+      combiDieselVehicleEmissions.co2[timePeriod] += dieselCO2 * vmtCombi;
+      combiDieselVehicleEmissions.nox.total += dieselNox * vmtCombi;
+      combiDieselVehicleEmissions.nox[timePeriod] += dieselNox * vmtCombi;
+      combiDieselVehicleEmissions.pm2_5.total += dieselPm2_5 * vmtCombi;
+      combiDieselVehicleEmissions.pm2_5[timePeriod] += dieselPm2_5 * vmtCombi;
+      combiDieselVehicleEmissions.pm10.total += dieselPm10 * vmtCombi;
+      combiDieselVehicleEmissions.pm10[timePeriod] += dieselPm10 * vmtCombi;
+      combiDieselVehicleEmissions.voc.total += dieselVoc * vmtCombi;
+      combiDieselVehicleEmissions.voc[timePeriod] += dieselVoc * vmtCombi;
+
+      singlDieselVehicleEmissions.co.total += dieselCO * vmtSingl;
+      singlDieselVehicleEmissions.co[timePeriod] += dieselCO * vmtSingl;
+      singlDieselVehicleEmissions.co2.total += dieselCO2 * vmtSingl;
+      singlDieselVehicleEmissions.co2[timePeriod] += dieselCO2 * vmtSingl;
+      singlDieselVehicleEmissions.nox.total += dieselNox * vmtSingl;
+      singlDieselVehicleEmissions.nox[timePeriod] += dieselNox * vmtSingl;
+      singlDieselVehicleEmissions.pm2_5.total += dieselPm2_5 * vmtSingl;
+      singlDieselVehicleEmissions.pm2_5[timePeriod] += dieselPm2_5 * vmtSingl;
+      singlDieselVehicleEmissions.pm10.total += dieselPm10 * vmtSingl;
+      singlDieselVehicleEmissions.pm10[timePeriod] += dieselPm10 * vmtSingl;
+      singlDieselVehicleEmissions.voc.total += dieselVoc * vmtSingl;
+      singlDieselVehicleEmissions.voc[timePeriod] += dieselVoc * vmtSingl;
     }
 
     co2Emissions.truck = Object.keys(co2Emissions.singl).reduce(
@@ -236,16 +319,50 @@ class EmissionsCalculator {
       {},
     );
 
-    // Convert the C02 units to tonnes
+    const truckDieselVehicleEmissions = Object.keys(
+      singlDieselVehicleEmissions,
+    ).reduce((acc, eType) => {
+      acc[eType] = Object.keys(singlDieselVehicleEmissions[eType]).reduce(
+        (acc2, tBin) => {
+          acc2[tBin] =
+            singlDieselVehicleEmissions[eType][tBin] +
+            combiDieselVehicleEmissions[eType][tBin];
+          return acc2;
+        },
+        {},
+      );
+      return acc;
+    }, {});
+
+    // WARNING: MUTATIONS
+    // Convert the units to metric tonnes.
+    //   Formulas provided by NYSDOT are for grams.
     Object.keys(co2Emissions).forEach((vehClass) => {
       Object.keys(co2Emissions[vehClass]).forEach((timePeriod) => {
         co2Emissions[vehClass][timePeriod] /= 1000000;
       });
     });
 
+    [
+      passGasolineVehicleEmissions,
+      combiDieselVehicleEmissions,
+      singlDieselVehicleEmissions,
+      truckDieselVehicleEmissions,
+    ].forEach((emissionsObj) =>
+      Object.keys(emissionsObj).forEach((eType) => {
+        Object.keys(emissionsObj[eType]).forEach((tBin) => {
+          emissionsObj[eType][tBin] /= 1000000;
+        });
+      }),
+    );
+
     return this.outputFormatter({
       tmc,
       co2Emissions,
+      passGasolineVehicleEmissions,
+      combiDieselVehicleEmissions,
+      singlDieselVehicleEmissions,
+      truckDieselVehicleEmissions,
     });
   }
 }
