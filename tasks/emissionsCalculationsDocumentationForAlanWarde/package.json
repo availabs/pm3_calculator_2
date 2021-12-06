@@ -1,0 +1,16 @@
+{
+  "name": "emissionscalculationsdocumentationforalanwarde",
+  "version": "1.0.0",
+  "description": "**DATE: 2021-11-19 10:35AM**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chart.js": "^3.6.2",
+    "chartjs-node-canvas": "^4.1.5"
+  }
+}

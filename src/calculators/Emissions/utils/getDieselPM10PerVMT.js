@@ -7,63 +7,38 @@ const getDieselPM10PerVMT = (speed_mph) => {
     return 0;
   }
 
-  //              |   Coefficients
-  // Intercept	  |   0.711799999999998
-  // X Variable 1	|   2.66666666667064E-05
-  // X Variable 2	|   -0.00032
-  // X Variable 3	|   -0.090246666666665
   if (speed_mph <= 5) {
     return (
-      speed_mph ** 3 * 2.66666666667064e-5 +
+      speed_mph ** 3 * 2.66667e-5 +
       speed_mph ** 2 * -0.00032 +
-      speed_mph ** 1 * -0.090246666666665 +
-      0.711799999999998
+      speed_mph ** 1 * -0.090246667 +
+      0.7118
     );
   }
 
-  //              |   Coefficients
-  // Intercept	  |   -0.51870857142853
-  // X Variable 1	|   0.001941666666667
-  // X Variable 2	|   -0.045771428571427
-  // X Variable 3	|   0.330101190476174
-  if (speed_mph <= 9) {
+  if (speed_mph <= 10) {
     return (
-      speed_mph ** 3 * 0.001941666666667 +
-      speed_mph ** 2 * -0.045771428571427 +
-      speed_mph ** 1 * 0.330101190476174 +
-      -0.51870857142853
+      speed_mph ** 3 * 0.001941667 +
+      speed_mph ** 2 * -0.045771429 +
+      speed_mph ** 1 * 0.33010119 +
+      -0.518708571
     );
   }
 
-  //              |   Coefficients
-  // Intercept	  |   0.2045
-  // X Variable 1	|   -0.0057
   if (speed_mph <= 15) {
     return speed_mph * -0.0057 + 0.2045;
   }
 
-  const s = Math.min(speed_mph, 72);
-
-  //              |   Coefficients
-  // Intercept	  |   1.78796246789364
-  // X Variable 1	|   1.59025338789712E-13
-  // X Variable 2	|   -6.08851667189023E-11
-  // X Variable 3	|   9.90171940848851E-09
-  // X Variable 4	|   -8.90690050705625E-07
-  // X Variable 5	|   4.83195824339469E-05
-  // X Variable 6	|   -0.001614033541327
-  // X Variable 7	|   0.032361578968289
-  // X Variable 8	|   -0.357979789292008
   return (
-    s ** 8 * 1.59025338789712e-13 +
-    s ** 7 * -6.08851667189023e-11 +
-    s ** 6 * 9.90171940848851e-9 +
-    s ** 5 * -8.90690050705625e-7 +
-    s ** 4 * 4.83195824339469e-5 +
-    s ** 3 * -0.001614033541327 +
-    s ** 2 * 0.032361578968289 +
-    s ** 1 * -0.357979789292008 +
-    1.78796246789364
+    speed_mph ** 8 * 1.59025e-13 +
+    speed_mph ** 7 * -6.08852e-11 +
+    speed_mph ** 6 * 9.90172e-9 +
+    speed_mph ** 5 * -8.9069e-7 +
+    speed_mph ** 4 * 4.83196e-5 +
+    speed_mph ** 3 * -0.001614034 +
+    speed_mph ** 2 * 0.032361579 +
+    speed_mph ** 1 * -0.357979789 +
+    1.787962468
   );
 };
 
