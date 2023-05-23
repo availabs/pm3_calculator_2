@@ -1,89 +1,43 @@
-const _ = require('lodash');
 const memoizeOne = require('memoize-one');
 
 const { query } = require('../storage/services/DBService');
 
-const getRisYearsForLatestConflationMapVersion = memoizeOne(async () => {
+//  Get the latest conflation.conflation_map_<year>_v<conflation version>_ris_based_metadata view
+//    for the year or its closest predecessor.
+const getRisBasedAadtViewForNpmrdsYear = memoizeOne(async (year) => {
+  const max_matviewname_prefix = `conflation_map_${year}_v`;
+  const max_matviewname_prefix_len = max_matviewname_prefix.length;
+
+  // Example: conflation.conflation_map_2022_v0_6_0_ris_based_metadata
   const sql = `
-    SELECT
-        "conflationMapVersion",
-        "risYears"
-      FROM (
-        SELECT
-            -- Extract the x_y_z semantic version from the conflation_map_vx_y_x_ris_based_metadata_<year> matviewname
-            REGEXP_REPLACE(
-              matviewname,
-              '^conflation_map_v|_ris_based_metadata_\\d{4}$',
-              '',
-              'g'
-            ) AS "conflationMapVersion",
-            -- Extract the year from the the conflation_map_vx_y_x_ris_based_metadata_<year> matviewname
-            json_agg(
-              (
-                regexp_match(
-                  matviewname,
-                  '\\d{4}$'
-                )
-              )[1]::INTEGER
-            ) AS "risYears"
-          FROM pg_catalog.pg_matviews
-          WHERE (
-            ( schemaname = 'conflation' )
-            AND
-            ( matviewname ~ '^conflation_map_v\\d{1,}_\\d{1,}_\\d{1,}_ris_based_metadata_\\d{4}$' )
-          )
-          GROUP BY 1
-      ) AS t
-      ORDER BY -- descending conflation map version
-          ( string_to_array("conflationMapVersion", '_') )[1]::INTEGER DESC,
-          ( string_to_array("conflationMapVersion", '_') )[2]::INTEGER DESC,
-          ( string_to_array("conflationMapVersion", '_') )[3]::INTEGER DESC
-      LIMIT 1  -- only the latest conflation map version
+      SELECT
+          matviewname AS table_name
+        FROM pg_catalog.pg_matviews
+        WHERE (
+          ( schemaname = 'conflation' )
+          AND
+          ( matviewname ~ '^conflation_map_\\d{4}_v\\d_\\d_\\d_ris_based_metadata$' )
+          AND
+          ( SUBSTRING(matviewname FROM 1 FOR $1) <= $2 )
+        )
+        ORDER BY 1 DESC LIMIT 1
     ;
   `;
 
-  // Result schema:
-  //   {
-  //     conflationMapVersion: "x_y_z",
-  //     risYears: [ years with RIS data ]
-  //   }
-  const { rows } = await query(sql);
+  const { rows } = await query(sql, [
+    max_matviewname_prefix_len,
+    max_matviewname_prefix,
+  ]);
 
-  return _.isEmpty(rows) ? null : rows[0];
-});
-
-const getRisBasedAadtYearForNpmrdsYear = memoizeOne(async npmrdsYear => {
-  const risAadtForTmcsMetadata = await getRisYearsForLatestConflationMapVersion();
-
-  if (risAadtForTmcsMetadata === null) {
+  if (rows.length === 0) {
     return null;
   }
 
-  const { risYears } = risAadtForTmcsMetadata;
+  const [{ table_name }] = rows;
 
-  const risYear = Math.max(...risYears.filter(yr => yr <= npmrdsYear));
-
-  return Number.isFinite(risYear) ? risYear : Math.min(...risYears);
-});
-
-const getRisBasedAadtViewForNpmrdsYear = memoizeOne(async npmrdsYear => {
-  const metadata = await getRisYearsForLatestConflationMapVersion();
-
-  if (metadata === null) {
-    return null;
-  }
-
-  const { conflationMapVersion } = metadata;
-
-  const risAadtYear = await getRisBasedAadtYearForNpmrdsYear(npmrdsYear);
-
-  const viewName = `conflation.conflation_map_v${conflationMapVersion}_ris_based_metadata_${risAadtYear}`;
-
-  return viewName;
+  return `conflation.${table_name}`;
 });
 
 module.exports = {
-  getRisYearsForLatestConflationMapVersion,
-  getRisBasedAadtYearForNpmrdsYear,
-  getRisBasedAadtViewForNpmrdsYear
+  getRisBasedAadtViewForNpmrdsYear,
 };
